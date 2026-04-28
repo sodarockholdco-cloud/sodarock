@@ -293,6 +293,50 @@
   </div>
 </div>
 
+<!-- EDIT MODAL -->
+<div class="overlay" id="editModal">
+  <div class="modal">
+    <div class="mtitle">Edit <span>Transaction</span></div>
+    <input type="hidden" id="edit-id">
+    <div class="frow"><label class="flbl">Type</label>
+      <select class="fsel" id="edit-type" onchange="toggleEditCats()">
+        <option value="expense">Expense / Cost</option>
+        <option value="income">Income / Rent</option>
+      </select>
+    </div>
+    <div class="frow"><label class="flbl">Property</label><select class="fsel" id="edit-prop"></select></div>
+    <div class="frow"><label class="flbl">Category</label>
+      <select class="fsel" id="edit-cat">
+        <option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option>
+        <option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option>
+        <option>LOC Interest</option><option>Utilities</option><option>Other</option>
+      </select>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Amount ($)</label><input type="number" class="finput" id="edit-amt"></div>
+      <div><label class="flbl">Date</label><input type="date" class="finput" id="edit-date"></div>
+    </div>
+    <div class="frow"><label class="flbl">Description</label><input type="text" class="finput" id="edit-desc"></div>
+    <div class="frow">
+      <label class="flbl">Attach / Replace Receipt</label>
+      <input type="file" id="edit-receipt-file" accept="image/*" style="display:none;" onchange="previewEditReceipt(event)">
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <button class="btn btn-s" style="flex:0;padding:0.55rem 0.8rem;font-size:0.65rem;" onclick="document.getElementById('edit-receipt-file').click()">📷 Choose Photo</button>
+        <span id="edit-receipt-name" style="font-size:0.62rem;color:var(--muted);">No new photo selected</span>
+      </div>
+      <img id="edit-receipt-preview" src="" style="display:none;width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-top:0.5rem;border:1px solid var(--border);">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn" style="flex:0;padding:0.7rem 0.8rem;background:var(--red);color:white;font-size:0.65rem;border-radius:7px;" onclick="deleteTransaction()">Delete</button>
+      <button class="btn btn-p" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ATTACH RECEIPT INPUT (hidden) -->
+<input type="file" id="attach-file" accept="image/*" style="display:none;" onchange="handleAttachReceipt(event)">
+
 <!-- SCAN MODAL -->
 <div class="overlay" id="scanModal">
   <div class="modal">
@@ -543,15 +587,18 @@ function renderExpenses() {
   if (!transactions.length) { el.innerHTML = '<div class="empty">No transactions yet.<br>Tap + to log or scan a receipt.</div>'; return; }
   el.innerHTML = [...transactions].reverse().map(t => {
     const thumb = t.receipt_url
-      ? `<img src="${t.receipt_url}" onclick="viewReceipt('${t.receipt_url}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;border:1px solid var(--border);">`
-      : `<div style="width:40px;height:40px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--muted);flex-shrink:0;">${t.type==='income'?'💰':'📄'}</div>`;
+      ? `<img src="${t.receipt_url}" onclick="viewReceipt('${t.receipt_url}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;border:1px solid var(--border);" title="Tap to view receipt">`
+      : `<div onclick="attachReceipt('${t.id}')" style="width:40px;height:40px;background:var(--surface2);border-radius:6px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--muted);flex-shrink:0;cursor:pointer;" title="Tap to attach receipt">${t.type==='income'?'💰':'📎'}</div>`;
     return `<div class="exp-item">
       ${thumb}
-      <div style="flex:1;">
-        <div class="exp-desc">${t.description||t.category}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="exp-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.description||t.category}</div>
         <div class="exp-meta">${t.property} · ${t.category} · ${t.date}</div>
       </div>
-      <div class="exp-amt ${t.type==='income'?'inc':''}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0;">
+        <div class="exp-amt ${t.type==='income'?'inc':''}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div>
+        <button onclick="openEditModal('${t.id}')" style="font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;">Edit</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -925,6 +972,137 @@ async function confirmScan() {
   if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
   closeScanModal();
   showToast('Receipt saved ✓');
+  await loadAll();
+}
+
+// ── EDIT TRANSACTION ──────────────────────────────────────────────────────────
+let editReceiptFile = null;
+let attachTargetId = null;
+
+function openEditModal(id) {
+  const t = transactions.find(t => t.id === id);
+  if (!t) return;
+  editReceiptFile = null;
+
+  // Populate property dropdown
+  document.getElementById('edit-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
+    ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
+
+  document.getElementById('edit-id').value = t.id;
+  document.getElementById('edit-type').value = t.type;
+  document.getElementById('edit-prop').value = t.property;
+  document.getElementById('edit-amt').value = t.amount;
+  document.getElementById('edit-date').value = t.date;
+  document.getElementById('edit-desc').value = t.description || '';
+
+  // Set category options and value
+  toggleEditCats();
+  document.getElementById('edit-cat').value = t.category;
+
+  // Reset receipt preview
+  document.getElementById('edit-receipt-name').textContent = t.receipt_url ? '✓ Receipt attached' : 'No photo selected';
+  document.getElementById('edit-receipt-preview').style.display = 'none';
+  document.getElementById('edit-receipt-file').value = '';
+
+  document.getElementById('editModal').classList.add('open');
+}
+
+function toggleEditCats() {
+  const t = document.getElementById('edit-type').value;
+  document.getElementById('edit-cat').innerHTML = t === 'income'
+    ? '<option>Rent Payment</option><option>Other Income</option>'
+    : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
+}
+
+function previewEditReceipt(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  editReceiptFile = file;
+  document.getElementById('edit-receipt-name').textContent = file.name;
+  const preview = document.getElementById('edit-receipt-preview');
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+}
+
+async function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const amt = parseFloat(document.getElementById('edit-amt').value)||0;
+  if (!amt) { showToast('Enter an amount', true); return; }
+  setSyncStatus('syncing', 'Saving...');
+
+  let receiptUrl = undefined; // undefined = don't change existing
+
+  // Upload new receipt if selected
+  if (editReceiptFile) {
+    const ext = editReceiptFile.name.split('.').pop() || 'jpg';
+    const path = `receipts/${Date.now()}.${ext}`;
+    const { data: uploadData, error: uploadError } = await sb.storage
+      .from('receipts')
+      .upload(path, editReceiptFile, { contentType: editReceiptFile.type });
+    if (!uploadError) {
+      const { data: urlData } = sb.storage.from('receipts').getPublicUrl(path);
+      receiptUrl = urlData?.publicUrl || null;
+    } else {
+      showToast('Image upload failed', true);
+    }
+  }
+
+  const updates = {
+    type: document.getElementById('edit-type').value,
+    property: document.getElementById('edit-prop').value,
+    category: document.getElementById('edit-cat').value,
+    amount: amt,
+    date: document.getElementById('edit-date').value,
+    description: document.getElementById('edit-desc').value,
+  };
+  if (receiptUrl !== undefined) updates.receipt_url = receiptUrl;
+
+  const { error } = await sb.from('transactions').update(updates).eq('id', id);
+  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editModal');
+  showToast('Transaction updated ✓');
+  await loadAll();
+}
+
+async function deleteTransaction() {
+  const id = document.getElementById('edit-id').value;
+  if (!confirm('Delete this transaction? This cannot be undone.')) return;
+  setSyncStatus('syncing', 'Deleting...');
+  const { error } = await sb.from('transactions').delete().eq('id', id);
+  if (error) { showToast('Delete failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editModal');
+  showToast('Transaction deleted');
+  await loadAll();
+}
+
+// ── ATTACH RECEIPT TO EXISTING TRANSACTION ────────────────────────────────────
+function attachReceipt(id) {
+  attachTargetId = id;
+  document.getElementById('attach-file').click();
+}
+
+async function handleAttachReceipt(e) {
+  const file = e.target.files[0];
+  if (!file || !attachTargetId) return;
+  setSyncStatus('syncing', 'Uploading receipt...');
+
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `receipts/${Date.now()}.${ext}`;
+  const { error: uploadError } = await sb.storage
+    .from('receipts')
+    .upload(path, file, { contentType: file.type });
+
+  if (uploadError) { showToast('Upload failed', true); setSyncStatus('error','Error'); return; }
+
+  const { data: urlData } = sb.storage.from('receipts').getPublicUrl(path);
+  const receiptUrl = urlData?.publicUrl;
+
+  const { error } = await sb.from('transactions').update({ receipt_url: receiptUrl }).eq('id', attachTargetId);
+  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+
+  document.getElementById('attach-file').value = '';
+  attachTargetId = null;
+  showToast('Receipt attached ✓');
   await loadAll();
 }
 
