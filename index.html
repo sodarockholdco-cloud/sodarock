@@ -257,7 +257,8 @@
 <div class="fabs">
   <div class="fab-menu" id="fabMenu">
     <div class="fab-row"><span class="fab-label">Log Time</span><button class="fab-mini" onclick="closeFab();openModal('hoursModal')">⏱</button></div>
-    <div class="fab-row"><span class="fab-label">Log Expense</span><button class="fab-mini" onclick="closeFab();openModal('expModal')">✏️</button></div>
+    <div class="fab-row"><span class="fab-label">Scan Receipt</span><button class="fab-mini" onclick="closeFab();openScanModal()">📷</button></div>
+    <div class="fab-row"><span class="fab-label">Manual Entry</span><button class="fab-mini" onclick="closeFab();openModal('expModal')">✏️</button></div>
   </div>
   <button class="fab" id="mainFab" onclick="toggleFab()">+</button>
 </div>
@@ -288,6 +289,61 @@
     <div class="btn-row">
       <button class="btn btn-s" onclick="closeModal('expModal')">Cancel</button>
       <button class="btn btn-p" onclick="saveExpense()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCAN MODAL -->
+<div class="overlay" id="scanModal">
+  <div class="modal">
+    <div class="mtitle">Scan <span>Receipt</span></div>
+
+    <!-- Step 1: Camera -->
+    <div id="scan-s1">
+      <div id="scan-preview" style="width:100%;aspect-ratio:4/3;background:var(--surface2);border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:1rem;overflow:hidden;position:relative;">
+        <img id="scan-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
+        <div id="scan-ph" style="text-align:center;color:var(--muted);">
+          <div style="font-size:2.5rem;margin-bottom:0.4rem;">📷</div>
+          <div style="font-size:0.68rem;">Tap to take photo or upload</div>
+        </div>
+      </div>
+      <input type="file" id="scan-file" accept="image/*" capture="environment" style="display:none;" onchange="handleScanFile(event)">
+      <button class="btn btn-p" style="width:100%;margin-bottom:0.5rem;" onclick="document.getElementById('scan-file').click()">📷 &nbsp;Open Camera / Choose Photo</button>
+      <div id="scan-analyzing" style="display:none;text-align:center;padding:0.8rem;color:var(--muted);font-size:0.7rem;">
+        <div style="font-size:1.3rem;margin-bottom:0.3rem;">⏳</div>Reading receipt with AI...
+      </div>
+    </div>
+
+    <!-- Step 2: Confirm -->
+    <div id="scan-s2" style="display:none;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.7rem;margin-bottom:0.8rem;display:flex;gap:0.7rem;align-items:center;">
+        <img id="scan-thumb" src="" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+        <div style="font-size:0.62rem;color:var(--muted);line-height:1.6;">Receipt scanned · Review and confirm fields below. Edit anything the AI missed.</div>
+      </div>
+      <div class="frow"><label class="flbl">Type</label>
+        <select class="fsel" id="sc-type" onchange="toggleScanCats()">
+          <option value="expense">Expense / Cost</option>
+          <option value="income">Income / Rent</option>
+        </select>
+      </div>
+      <div class="frow"><label class="flbl">Property</label><select class="fsel" id="sc-prop"></select></div>
+      <div class="frow"><label class="flbl">Category</label>
+        <select class="fsel" id="sc-cat">
+          <option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option>
+          <option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option>
+          <option>LOC Interest</option><option>Utilities</option><option>Other</option>
+        </select>
+      </div>
+      <div class="frow2">
+        <div><label class="flbl">Amount ($)</label><input type="number" class="finput" id="sc-amt" placeholder="0"></div>
+        <div><label class="flbl">Date</label><input type="date" class="finput" id="sc-date"></div>
+      </div>
+      <div class="frow"><label class="flbl">Vendor / Description</label><input type="text" class="finput" id="sc-desc" placeholder="Vendor name"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeScanModal()">Cancel</button>
+      <button class="btn btn-p" id="scan-confirm-btn" style="display:none;" onclick="confirmScan()">Save Transaction</button>
     </div>
   </div>
 </div>
@@ -484,16 +540,30 @@ function renderOverview() {
 
 function renderExpenses() {
   const el = document.getElementById('exp-list');
-  if (!transactions.length) { el.innerHTML = '<div class="empty">No transactions yet.<br>Tap + to log.</div>'; return; }
-  el.innerHTML = [...transactions].reverse().map(t => `
-    <div class="exp-item">
-      <div style="width:34px;height:34px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;">${t.type==='income'?'💰':'📄'}</div>
+  if (!transactions.length) { el.innerHTML = '<div class="empty">No transactions yet.<br>Tap + to log or scan a receipt.</div>'; return; }
+  el.innerHTML = [...transactions].reverse().map(t => {
+    const thumb = t.receipt_url
+      ? `<img src="${t.receipt_url}" onclick="viewReceipt('${t.receipt_url}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;border:1px solid var(--border);">`
+      : `<div style="width:40px;height:40px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--muted);flex-shrink:0;">${t.type==='income'?'💰':'📄'}</div>`;
+    return `<div class="exp-item">
+      ${thumb}
       <div style="flex:1;">
         <div class="exp-desc">${t.description||t.category}</div>
         <div class="exp-meta">${t.property} · ${t.category} · ${t.date}</div>
       </div>
       <div class="exp-amt ${t.type==='income'?'inc':''}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+function viewReceipt(url) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:600;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = `<div style="position:relative;max-width:92vw;max-height:90vh;">
+    <img src="${url}" style="max-width:92vw;max-height:86vh;object-fit:contain;border-radius:8px;">
+    <button onclick="this.parentElement.parentElement.remove()" style="position:absolute;top:-14px;right:-14px;width:28px;height:28px;border-radius:50%;background:var(--accent);border:none;color:white;font-size:1rem;cursor:pointer;">×</button>
+  </div>`;
+  document.body.appendChild(ov);
 }
 
 function renderHours() {
@@ -733,6 +803,129 @@ function calcUW() {
   }
   vtEl.textContent=verdict;
   vEl.style.borderLeftColor=vColor;
+}
+
+// ── RECEIPT SCAN ───────────────────────────────────────────────────────────────
+let scanFile = null;
+
+function openScanModal() {
+  scanFile = null;
+  document.getElementById('scan-s1').style.display = 'block';
+  document.getElementById('scan-s2').style.display = 'none';
+  document.getElementById('scan-confirm-btn').style.display = 'none';
+  document.getElementById('scan-analyzing').style.display = 'none';
+  document.getElementById('scan-img').style.display = 'none';
+  document.getElementById('scan-ph').style.display = 'flex';
+  document.getElementById('scan-file').value = '';
+  document.getElementById('sc-date').value = new Date().toISOString().split('T')[0];
+  // Populate property dropdown
+  document.getElementById('sc-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
+    ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
+  document.getElementById('scanModal').classList.add('open');
+}
+
+function closeScanModal() {
+  document.getElementById('scanModal').classList.remove('open');
+}
+
+function toggleScanCats() {
+  const t = document.getElementById('sc-type').value;
+  document.getElementById('sc-cat').innerHTML = t === 'income'
+    ? '<option>Rent Payment</option><option>Other Income</option>'
+    : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
+}
+
+async function handleScanFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  scanFile = file;
+
+  // Show preview
+  const url = URL.createObjectURL(file);
+  const img = document.getElementById('scan-img');
+  img.src = url;
+  img.style.display = 'block';
+  document.getElementById('scan-ph').style.display = 'none';
+  document.getElementById('scan-thumb').src = url;
+  document.getElementById('scan-analyzing').style.display = 'block';
+
+  // Read as base64 for AI
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const b64 = ev.target.result.split(',')[1];
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          messages: [{ role: 'user', content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: b64 } },
+            { type: 'text', text: `Parse this receipt for a real estate investment tracker. Return ONLY valid JSON with no other text:\n{"amount":<number>,"date":"<YYYY-MM-DD>","vendor":"<string>","category":"<one of: Rehab,Contractor,Repairs & Maintenance,Insurance,Property Taxes,Utilities,Other>","description":"<string>"}\nUse null for any field you cannot determine.` }
+          ]}]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.map(c => c.text||'').join('').trim();
+      let parsed = {};
+      try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); } catch(_) {}
+
+      if (parsed.amount) document.getElementById('sc-amt').value = parsed.amount;
+      if (parsed.date) document.getElementById('sc-date').value = parsed.date;
+      if (parsed.vendor || parsed.description) document.getElementById('sc-desc').value = parsed.vendor || parsed.description;
+      if (parsed.category) {
+        const cats = ['Rehab','Contractor','Repairs & Maintenance','Insurance','Property Taxes','Mortgage Payment','LOC Interest','Utilities','Other'];
+        if (cats.includes(parsed.category)) document.getElementById('sc-cat').value = parsed.category;
+      }
+    } catch(_) {
+      showToast('Could not auto-read — fill in manually', true);
+    }
+    document.getElementById('scan-analyzing').style.display = 'none';
+    document.getElementById('scan-s2').style.display = 'block';
+    document.getElementById('scan-confirm-btn').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function confirmScan() {
+  const amt = parseFloat(document.getElementById('sc-amt').value)||0;
+  if (!amt) { showToast('Enter an amount', true); return; }
+  setSyncStatus('syncing', 'Uploading receipt...');
+
+  let receiptUrl = null;
+
+  // Upload image to Supabase Storage
+  if (scanFile) {
+    const ext = scanFile.name.split('.').pop() || 'jpg';
+    const path = `receipts/${Date.now()}.${ext}`;
+    const { data: uploadData, error: uploadError } = await sb.storage
+      .from('receipts')
+      .upload(path, scanFile, { contentType: scanFile.type, upsert: false });
+
+    if (!uploadError) {
+      const { data: urlData } = sb.storage.from('receipts').getPublicUrl(path);
+      receiptUrl = urlData?.publicUrl || null;
+    } else {
+      showToast('Image upload failed — saving without receipt', true);
+    }
+  }
+
+  // Save transaction
+  const { error } = await sb.from('transactions').insert({
+    type: document.getElementById('sc-type').value,
+    property: document.getElementById('sc-prop').value,
+    category: document.getElementById('sc-cat').value,
+    amount: amt,
+    date: document.getElementById('sc-date').value,
+    description: document.getElementById('sc-desc').value,
+    receipt_url: receiptUrl,
+  });
+
+  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+  closeScanModal();
+  showToast('Receipt saved ✓');
+  await loadAll();
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
