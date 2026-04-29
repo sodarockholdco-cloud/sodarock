@@ -7,113 +7,126 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0f0f0f;
-    --surface: #1a1a1a;
-    --surface2: #222222;
-    --border: #2e2e2e;
-    --text: #f0ede8;
-    --muted: #6b6560;
-    --accent: #c9922a;
-    --green: #52c47a;
-    --red: #c44b3d;
-    --blue: #4a7fa5;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body { background:var(--bg); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:13px; min-height:100vh; max-width:480px; margin:0 auto; }
+:root {
+  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#222; --border:#2e2e2e;
+  --text:#f0ede8; --muted:#6b6560; --accent:#c9922a; --green:#52c47a;
+  --red:#c44b3d; --blue:#4a7fa5;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;min-height:100vh;max-width:480px;margin:0 auto;}
 
-  .header { padding:1rem 1rem 0; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:100; }
-  .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.7rem; }
-  .logo { font-family:'Syne',sans-serif; font-weight:800; font-size:1.1rem; }
-  .logo span { color:var(--accent); }
-  .sync-status { font-size:0.55rem; color:var(--muted); display:flex; align-items:center; gap:0.3rem; }
-  .sync-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); }
-  .sync-dot.synced { background:var(--green); }
-  .sync-dot.syncing { background:var(--accent); animation:pulse 1s infinite; }
-  .sync-dot.error { background:var(--red); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+/* HEADER */
+.header{padding:1rem 1rem 0;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:100;}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.7rem;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;}
+.logo span{color:var(--accent);}
+.sync-status{font-size:0.55rem;color:var(--muted);display:flex;align-items:center;gap:0.3rem;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);}
+.sync-dot.synced{background:var(--green);}
+.sync-dot.syncing{background:var(--accent);animation:pulse 1s infinite;}
+.sync-dot.error{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;margin:0 -1rem;padding:0 1rem;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:0.55rem 0.8rem;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:all 0.15s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
 
-  .tabs { display:flex; overflow-x:auto; scrollbar-width:none; margin:0 -1rem; padding:0 1rem; }
-  .tabs::-webkit-scrollbar { display:none; }
-  .tab { padding:0.55rem 0.8rem; font-family:'IBM Plex Mono',monospace; font-size:0.58rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; background:none; border-top:none; border-left:none; border-right:none; transition:all 0.15s; }
-  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+/* PAGES */
+.page{display:none;padding:1rem;padding-bottom:5rem;}
+.page.active{display:block;}
 
-  .page { display:none; padding:1rem; padding-bottom:5rem; }
-  .page.active { display:block; }
+/* LABELS & CARDS */
+.slabel{font-size:0.56rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:0.45rem;margin-top:1.1rem;display:block;}
+.slabel:first-child{margin-top:0;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.85rem;}
+.card.full{grid-column:1/-1;}
+.card.ab{border-left:3px solid var(--accent);}
+.card.gb{border-left:3px solid var(--green);}
+.card.rb{border-left:3px solid var(--red);}
+.clbl{font-size:0.54rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.2rem;}
+.cval{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:700;line-height:1;}
+.cval.g{color:var(--green);}.cval.r{color:var(--red);}.cval.gold{color:var(--accent);}
+.csub{font-size:0.58rem;color:var(--muted);margin-top:0.18rem;}
+.gbar-wrap{background:var(--surface2);border-radius:4px;height:7px;margin:0.45rem 0 0.2rem;overflow:hidden;}
+.gbar{height:100%;background:linear-gradient(90deg,#3d8c5a,var(--green));border-radius:4px;transition:width 0.5s;}
+.glabels{display:flex;justify-content:space-between;font-size:0.54rem;color:var(--muted);}
+.row{display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid var(--border);font-size:0.7rem;}
+.row:last-child{border-bottom:none;}
+.row .l{color:var(--muted);}
 
-  .slabel { font-size:0.56rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:0.45rem; margin-top:1.1rem; display:block; }
-  .slabel:first-child { margin-top:0; }
+/* LIST ITEMS */
+.exp-item{display:flex;align-items:center;gap:0.6rem;padding:0.65rem 0;border-bottom:1px solid var(--border);}
+.exp-item:last-child{border-bottom:none;}
+.exp-desc{font-size:0.73rem;margin-bottom:0.06rem;}
+.exp-meta{font-size:0.56rem;color:var(--muted);}
+.exp-amt{font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:600;color:var(--red);white-space:nowrap;}
+.exp-amt.inc{color:var(--green);}
+.empty{text-align:center;padding:2rem 1rem;color:var(--muted);font-size:0.7rem;line-height:1.9;}
+.loading{display:flex;align-items:center;justify-content:center;height:60px;color:var(--muted);font-size:0.7rem;gap:0.5rem;}
 
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.5rem; }
-  .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:0.85rem; }
-  .card.full { grid-column:1/-1; }
-  .card.ab { border-left:3px solid var(--accent); }
-  .card.gb { border-left:3px solid var(--green); }
-  .card.rb { border-left:3px solid var(--red); }
-  .clbl { font-size:0.54rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:0.2rem; }
-  .cval { font-family:'Syne',sans-serif; font-size:1.35rem; font-weight:700; line-height:1; }
-  .cval.g { color:var(--green); } .cval.r { color:var(--red); } .cval.gold { color:var(--accent); }
-  .csub { font-size:0.58rem; color:var(--muted); margin-top:0.18rem; }
+/* MODALS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;display:none;align-items:flex-end;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:16px 16px 0 0;padding:1.3rem 1rem 2rem;width:100%;max-width:480px;margin:0 auto;border-top:1px solid var(--border);max-height:90vh;overflow-y:auto;}
+.mtitle{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:1rem;}
+.mtitle span{color:var(--accent);}
+.flbl{font-size:0.56rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.22rem;display:block;}
+.finput,.fsel{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:0.6rem 0.7rem;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:0.8rem;outline:none;box-sizing:border-box;}
+.finput:focus,.fsel:focus{border-color:var(--accent);}
+.fsel option{background:var(--surface2);}
+.frow{margin-bottom:0.65rem;}
+.frow2{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.65rem;}
+.frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin-bottom:0.65rem;}
+.btn-row{display:flex;gap:0.5rem;margin-top:1rem;}
+.btn{flex:1;padding:0.7rem;border-radius:7px;border:none;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;cursor:pointer;}
+.btn-p{background:var(--accent);color:white;font-weight:500;}
+.btn-s{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+.btn-d{background:var(--red);color:white;flex:0;padding:0.7rem 0.8rem;font-size:0.65rem;border-radius:7px;border:none;font-family:'IBM Plex Mono',monospace;cursor:pointer;}
 
-  .gbar-wrap { background:var(--surface2); border-radius:4px; height:7px; margin:0.45rem 0 0.2rem; overflow:hidden; }
-  .gbar { height:100%; background:linear-gradient(90deg,#3d8c5a,var(--green)); border-radius:4px; transition:width 0.5s; }
-  .glabels { display:flex; justify-content:space-between; font-size:0.54rem; color:var(--muted); }
+/* FAB */
+.fabs{position:fixed;bottom:1.5rem;right:1.5rem;display:flex;flex-direction:column;gap:0.6rem;align-items:flex-end;z-index:200;}
+.fab{width:54px;height:54px;border-radius:50%;background:var(--accent);color:white;font-size:1.5rem;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(201,146,42,0.4);transition:transform 0.15s;}
+.fab:active{transform:scale(0.92);}
+.fab-mini{width:42px;height:42px;border-radius:50%;background:var(--surface);border:1px solid var(--border);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.4);}
+.fab-row{display:flex;align-items:center;gap:0.5rem;}
+.fab-label{background:var(--surface);color:var(--text);font-size:0.6rem;padding:0.25rem 0.55rem;border-radius:6px;border:1px solid var(--border);white-space:nowrap;}
+.fab-menu{display:none;flex-direction:column;gap:0.6rem;align-items:flex-end;}
+.fab-menu.open{display:flex;}
 
-  .row { display:flex; justify-content:space-between; padding:0.3rem 0; border-bottom:1px solid var(--border); font-size:0.7rem; }
-  .row:last-child { border-bottom:none; }
-  .row .l { color:var(--muted); }
+/* TOAST */
+.toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%) translateY(-60px);background:#3d8c5a;color:white;padding:0.55rem 1.1rem;border-radius:20px;font-size:0.7rem;z-index:500;transition:transform 0.3s;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.err{background:var(--red);}
 
-  .exp-item { display:flex; align-items:center; gap:0.6rem; padding:0.65rem 0; border-bottom:1px solid var(--border); }
-  .exp-item:last-child { border-bottom:none; }
-  .exp-desc { font-size:0.73rem; margin-bottom:0.06rem; }
-  .exp-meta { font-size:0.56rem; color:var(--muted); }
-  .exp-amt { font-family:'Syne',sans-serif; font-size:0.9rem; font-weight:600; color:var(--red); white-space:nowrap; }
-  .exp-amt.inc { color:var(--green); }
+/* MISC */
+.irow{display:flex;gap:0.4rem;align-items:center;margin-top:0.55rem;}
+.ibtn{padding:0.6rem 0.8rem;font-size:0.62rem;background:var(--accent);color:white;border:none;border-radius:7px;font-family:'IBM Plex Mono',monospace;cursor:pointer;white-space:nowrap;}
+.uw-verdict{display:none;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:0.85rem;margin-bottom:0.5rem;}
+.edit-btn{font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;}
 
-  .empty { text-align:center; padding:2rem 1rem; color:var(--muted); font-size:0.7rem; line-height:1.9; }
+/* RENT BANNER */
+.rent-banner{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:1rem;margin-bottom:0.8rem;}
+.rent-banner-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;color:var(--accent);margin-bottom:0.5rem;}
+.unit-confirm-row{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.72rem;}
+.unit-confirm-row:last-child{border-bottom:none;}
+.unit-btn-group{display:flex;gap:0.3rem;}
+.unit-btn{padding:0.2rem 0.5rem;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:0.58rem;cursor:pointer;font-family:'IBM Plex Mono',monospace;}
+.unit-btn.received{background:var(--green);border-color:var(--green);color:white;}
+.unit-btn.partial{background:var(--accent);border-color:var(--accent);color:white;}
+.unit-btn.late{background:var(--red);border-color:var(--red);color:white;}
 
-  /* MODALS */
-  .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:300; display:none; align-items:flex-end; }
-  .overlay.open { display:flex; }
-  .modal { background:var(--surface); border-radius:16px 16px 0 0; padding:1.3rem 1rem 2rem; width:100%; max-width:480px; margin:0 auto; border-top:1px solid var(--border); max-height:90vh; overflow-y:auto; }
-  .mtitle { font-family:'Syne',sans-serif; font-weight:700; font-size:1rem; margin-bottom:1rem; }
-  .mtitle span { color:var(--accent); }
+/* PAYMENT HISTORY DOTS */
+.dot-row{display:flex;gap:0.25rem;margin-top:0.4rem;}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);}
+.dot.paid{background:var(--green);}
+.dot.partial{background:var(--accent);}
+.dot.late{background:var(--red);}
+.dot.pending{background:var(--surface2);}
 
-  .flbl { font-size:0.56rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:0.22rem; display:block; }
-  .finput, .fsel { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:0.6rem 0.7rem; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.8rem; outline:none; box-sizing:border-box; }
-  .finput:focus, .fsel:focus { border-color:var(--accent); }
-  .fsel option { background:var(--surface2); }
-  .frow { margin-bottom:0.65rem; }
-  .frow2 { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.65rem; }
-
-  .btn-row { display:flex; gap:0.5rem; margin-top:1rem; }
-  .btn { flex:1; padding:0.7rem; border-radius:7px; border:none; font-family:'IBM Plex Mono',monospace; font-size:0.7rem; cursor:pointer; }
-  .btn-p { background:var(--accent); color:white; font-weight:500; }
-  .btn-s { background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
-
-  /* FAB */
-  .fabs { position:fixed; bottom:1.5rem; right:1.5rem; display:flex; flex-direction:column; gap:0.6rem; align-items:flex-end; z-index:200; }
-  .fab { width:54px; height:54px; border-radius:50%; background:var(--accent); color:white; font-size:1.5rem; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 18px rgba(201,146,42,0.4); transition:transform 0.15s; }
-  .fab:active { transform:scale(0.92); }
-  .fab-mini { width:42px; height:42px; border-radius:50%; background:var(--surface); border:1px solid var(--border); font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.4); }
-  .fab-row { display:flex; align-items:center; gap:0.5rem; }
-  .fab-label { background:var(--surface); color:var(--text); font-size:0.6rem; padding:0.25rem 0.55rem; border-radius:6px; border:1px solid var(--border); white-space:nowrap; }
-  .fab-menu { display:none; flex-direction:column; gap:0.6rem; align-items:flex-end; }
-  .fab-menu.open { display:flex; }
-
-  .toast { position:fixed; top:1rem; left:50%; transform:translateX(-50%) translateY(-60px); background:#3d8c5a; color:white; padding:0.55rem 1.1rem; border-radius:20px; font-size:0.7rem; z-index:500; transition:transform 0.3s; white-space:nowrap; }
-  .toast.show { transform:translateX(-50%) translateY(0); }
-  .toast.err { background:var(--red); }
-
-  .irow { display:flex; gap:0.4rem; align-items:center; margin-top:0.55rem; }
-  .ibtn { padding:0.6rem 0.8rem; font-size:0.62rem; background:var(--accent); color:white; border:none; border-radius:7px; font-family:'IBM Plex Mono',monospace; cursor:pointer; white-space:nowrap; }
-
-  /* UNDERWRITER */
-  .uw-verdict { display:none; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:8px; padding:0.85rem; margin-bottom:0.5rem; }
-  .uw-verdict-text { font-size:0.75rem; line-height:1.7; margin-top:0.3rem; }
-
-  /* LOADING */
-  .loading { display:flex; align-items:center; justify-content:center; height:60px; color:var(--muted); font-size:0.7rem; gap:0.5rem; }
+/* TOGGLE BUTTON */
+.toggle-btn{padding:0.55rem;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;cursor:pointer;flex:1;}
+.toggle-btn.active{background:var(--accent);border-color:var(--accent);color:white;}
 </style>
 </head>
 <body>
@@ -133,11 +146,15 @@
     <button class="tab" onclick="switchTab('drives',this)">Mileage</button>
     <button class="tab" onclick="switchTab('properties',this)">Properties</button>
     <button class="tab" onclick="switchTab('underwrite',this)">Underwrite</button>
+    <button class="tab" onclick="switchTab('export',this)">Export</button>
   </div>
 </div>
 
 <!-- OVERVIEW -->
 <div id="page-overview" class="page active">
+  <!-- Rent confirmation banner -->
+  <div id="rent-banner-container"></div>
+
   <span class="slabel">Freedom Target — $125k Free Cash Flow</span>
   <div class="card full ab" style="margin-bottom:0.5rem;">
     <div class="clbl">Annual Net Cash Flow</div>
@@ -146,14 +163,14 @@
     <div class="glabels"><span>$0</span><span id="ov-pct">0% of target</span><span>$125k</span></div>
   </div>
   <div class="grid2">
-    <div class="card gb"><div class="clbl">Monthly Income</div><div class="cval g" id="ov-inc">—</div><div class="csub">gross rent</div></div>
-    <div class="card rb"><div class="clbl">Monthly Expenses</div><div class="cval r" id="ov-exp">—</div><div class="csub">all properties</div></div>
+    <div class="card gb"><div class="clbl">Monthly Income</div><div class="cval g" id="ov-inc">—</div><div class="csub">confirmed this month</div></div>
+    <div class="card rb"><div class="clbl">Monthly Expenses</div><div class="cval r" id="ov-exp">—</div><div class="csub">logged this month</div></div>
   </div>
   <span class="slabel">Portfolio</span>
   <div class="grid2">
     <div class="card"><div class="clbl">Properties</div><div class="cval" id="ov-props">—</div><div class="csub" id="ov-doors">— / 24 doors</div></div>
     <div class="card"><div class="clbl">Total Equity</div><div class="cval g" id="ov-eq">—</div><div class="csub">value minus debt</div></div>
-    <div class="card"><div class="clbl">Total Debt</div><div class="cval r" id="ov-debt">—</div><div class="csub">mortgages + LOCs</div></div>
+    <div class="card"><div class="clbl">Total Debt</div><div class="cval r" id="ov-debt">—</div><div class="csub">mortgages</div></div>
     <div class="card"><div class="clbl">This Month Spent</div><div class="cval gold" id="ov-spent">—</div><div class="csub">logged expenses</div></div>
   </div>
   <span class="slabel">QBI Hours — <span id="ov-yr"></span></span>
@@ -227,7 +244,7 @@
 <!-- PROPERTIES -->
 <div id="page-properties" class="page">
   <div id="prop-list"><div class="loading">⏳ Loading...</div></div>
-  <button class="btn btn-p" style="width:100%;margin-top:0.5rem;" onclick="openModal('propModal')">+ Add Property</button>
+  <button class="btn btn-p" style="width:100%;margin-top:0.5rem;" onclick="openAddPropModal()">+ Add Property</button>
 </div>
 
 <!-- UNDERWRITE -->
@@ -236,38 +253,85 @@
   <div class="card full" style="margin-bottom:0.7rem;">
     <div class="frow2">
       <div><label class="flbl">Purchase Price ($)</label><input type="number" class="finput" id="uw-price" placeholder="89000" oninput="calcUW()"></div>
-      <div><label class="flbl">Units</label><input type="number" class="finput" id="uw-units" placeholder="2" value="2" oninput="calcUW()"></div>
+      <div><label class="flbl">Units</label><input type="number" class="finput" id="uw-units" placeholder="2" value="2" oninput="updateUWUnits()"></div>
     </div>
+    <div class="frow"><label class="flbl">Address (for tax lookup)</label><input type="text" class="finput" id="uw-address" placeholder="1261 E 167th St Cleveland OH" onblur="lookupTax()"></div>
+    <div id="uw-unit-rents" style="margin-bottom:0.65rem;"></div>
     <div class="frow2">
       <div><label class="flbl">Rehab Budget ($)</label><input type="number" class="finput" id="uw-rehab" placeholder="15000" oninput="calcUW()"></div>
-      <div><label class="flbl">Rent / Unit / Mo ($)</label><input type="number" class="finput" id="uw-rent" placeholder="1050" oninput="calcUW()"></div>
+      <div><label class="flbl">Down Payment %</label><input type="number" class="finput" id="uw-down" placeholder="25" value="25" oninput="calcUW()"></div>
     </div>
     <div class="frow2">
-      <div><label class="flbl">Down Payment %</label><input type="number" class="finput" id="uw-down" placeholder="25" value="25" oninput="calcUW()"></div>
       <div><label class="flbl">Interest Rate %</label><input type="number" class="finput" id="uw-rate" placeholder="6.3" value="6.3" oninput="calcUW()"></div>
+      <div><label class="flbl">Insurance / Mo ($)</label><input type="number" class="finput" id="uw-insurance" placeholder="110" value="110" oninput="calcUW()"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Annual Taxes ($)</label><input type="number" class="finput" id="uw-taxes" placeholder="2400" oninput="calcUW()"><div style="font-size:0.55rem;color:var(--muted);margin-top:0.2rem;" id="uw-tax-status">Enter address above to auto-lookup</div></div>
+      <div><label class="flbl">Mgmt Fee %</label><input type="number" class="finput" id="uw-mgmt" placeholder="0" value="0" oninput="calcUW()"></div>
     </div>
   </div>
-  <div class="uw-verdict" id="uw-verdict"><div class="clbl">Soda Rock Verdict</div><div class="uw-verdict-text" id="uw-vtext"></div></div>
+  <div class="uw-verdict" id="uw-verdict"><div class="clbl">Soda Rock Verdict</div><div style="font-size:0.75rem;line-height:1.7;margin-top:0.3rem;" id="uw-vtext"></div></div>
+  <span class="slabel">Full Expense Breakdown</span>
+  <div class="card full" id="uw-breakdown" style="margin-bottom:0.5rem;display:none;">
+    <div class="row"><span class="l">Gross Rent / Mo</span><span id="uw-b-gross" style="color:var(--green);">—</span></div>
+    <div class="row"><span class="l">Vacancy (8%)</span><span id="uw-b-vac" style="color:var(--red);">—</span></div>
+    <div class="row"><span class="l">Mortgage P&I</span><span id="uw-b-mort" style="color:var(--red);">—</span></div>
+    <div class="row"><span class="l">Insurance</span><span id="uw-b-ins" style="color:var(--red);">—</span></div>
+    <div class="row"><span class="l">Property Taxes</span><span id="uw-b-tax" style="color:var(--red);">—</span></div>
+    <div class="row"><span class="l">Maintenance (5%)</span><span id="uw-b-maint" style="color:var(--red);">—</span></div>
+    <div class="row"><span class="l">Management Fee</span><span id="uw-b-mgmt" style="color:var(--red);">—</span></div>
+    <div class="row" style="border-top:1px solid var(--text);margin-top:0.3rem;padding-top:0.4rem;"><span style="font-weight:600;">Net Monthly CF</span><span id="uw-b-net" style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;">—</span></div>
+  </div>
   <div class="grid2" id="uw-results" style="display:none;">
     <div class="card"><div class="clbl">All-In Basis</div><div class="cval gold" id="uw-basis">—</div><div class="csub">purchase + rehab</div></div>
     <div class="card"><div class="clbl">Cash Needed</div><div class="cval r" id="uw-cash">—</div><div class="csub">down + rehab</div></div>
-    <div class="card"><div class="clbl">Gross Rent / Mo</div><div class="cval g" id="uw-gross">—</div></div>
-    <div class="card"><div class="clbl">Mortgage / Mo</div><div class="cval r" id="uw-mort">—</div></div>
-    <div class="card"><div class="clbl">Net Monthly CF</div><div class="cval" id="uw-netmo">—</div></div>
     <div class="card"><div class="clbl">Net Annual CF</div><div class="cval" id="uw-netyr">—</div></div>
     <div class="card"><div class="clbl">Cap Rate</div><div class="cval" id="uw-cap">—</div></div>
     <div class="card"><div class="clbl">Cash-on-Cash</div><div class="cval" id="uw-coc">—</div></div>
-  </div>
-  <div class="card full" style="margin-top:0.5rem;">
-    <div class="clbl">1% Rule</div>
-    <div style="font-size:0.75rem;margin-top:0.2rem;" id="uw-onepct">Enter deal details above.</div>
+    <div class="card"><div class="clbl">1% Rule</div><div style="font-size:0.75rem;margin-top:0.3rem;" id="uw-onepct">—</div></div>
   </div>
   <span class="slabel">Model Assumptions</span>
   <div class="card full">
     <div class="row"><span class="l">Vacancy</span><span>8%</span></div>
-    <div class="row"><span class="l">Expense ratio</span><span>30%</span></div>
+    <div class="row"><span class="l">Maintenance reserve</span><span>5% of gross rent</span></div>
     <div class="row"><span class="l">Loan term</span><span>30 years</span></div>
+    <div class="row"><span class="l">Default insurance</span><span>$110/mo</span></div>
     <div class="row"><span class="l">Target rent / unit</span><span style="color:var(--accent);">$1,050–$1,100</span></div>
+  </div>
+</div>
+
+<!-- EXPORT -->
+<div id="page-export" class="page">
+  <span class="slabel" style="margin-top:0;">Export — Full Audit Package</span>
+  <div class="card full ab" style="margin-bottom:0.7rem;">
+    <div class="clbl">One-tap export — everything your CPA needs</div>
+    <div style="font-size:0.7rem;color:var(--muted);line-height:1.8;margin:0.4rem 0 0.8rem;">Generates transactions, hours, drives, and annual summary as CSV files. Each downloads separately.</div>
+    <button class="btn btn-p" style="width:100%;margin-bottom:0.5rem;" onclick="exportAll()">📦 Export All (CSV)</button>
+    <button class="btn btn-s" style="width:100%;" onclick="exportSummary()">📄 Annual CPA Summary</button>
+  </div>
+  <span class="slabel">Import Historical Data</span>
+  <div class="card full" style="margin-bottom:0.5rem;">
+    <div style="font-size:0.7rem;color:var(--muted);line-height:1.8;margin-bottom:0.8rem;">Download a template, fill it in with your historical data, then upload it back.</div>
+    <div class="frow"><label class="flbl">Data Type</label>
+      <select class="fsel" id="import-type">
+        <option value="transactions">Transactions / Expenses</option>
+        <option value="hours">Hours Log</option>
+        <option value="drives">Mileage / Drives</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn btn-s" onclick="downloadTemplate()">⬇ Download Template</button>
+      <button class="btn btn-p" onclick="document.getElementById('import-file').click()">⬆ Upload CSV</button>
+    </div>
+    <input type="file" id="import-file" accept=".csv" style="display:none;" onchange="handleImport(event)">
+  </div>
+  <div id="import-preview" style="display:none;">
+    <span class="slabel">Preview — Confirm Before Importing</span>
+    <div class="card full" id="import-preview-content" style="margin-bottom:0.5rem;"></div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn btn-s" onclick="cancelImport()">Cancel</button>
+      <button class="btn btn-p" onclick="confirmImport()">Import Records</button>
+    </div>
   </div>
 </div>
 
@@ -312,7 +376,149 @@
   </div>
 </div>
 
-<!-- EDIT MODAL -->
+<!-- HOURS MODAL -->
+<div class="overlay" id="hoursModal">
+  <div class="modal">
+    <div class="mtitle">Log <span>Time</span></div>
+    <div class="frow"><label class="flbl">Property</label><select class="fsel" id="hprop"></select></div>
+    <div class="frow"><label class="flbl">Activity</label>
+      <select class="fsel" id="hcat">
+        <option>Advertising & Showing</option><option>Tenant Screening & Leasing</option>
+        <option>Rent Collection</option><option>Property Inspection</option>
+        <option>Repairs & Maintenance</option><option>Contractor Supervision</option>
+        <option>Rehab Labor</option><option>Travel to Property</option>
+        <option>Bookkeeping & Admin</option><option>Other Qualifying Activity</option>
+      </select>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Hours</label><input type="number" class="finput" id="hhrs" placeholder="1.5" step="0.25"></div>
+      <div><label class="flbl">Date</label><input type="date" class="finput" id="hdate"></div>
+    </div>
+    <div class="frow"><label class="flbl">Notes</label><input type="text" class="finput" id="hnotes" placeholder="e.g. Supervised kitchen demo"></div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('hoursModal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveHours()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- DRIVE MODAL -->
+<div class="overlay" id="driveModal">
+  <div class="modal">
+    <div class="mtitle">Log <span>Drive</span></div>
+    <div class="frow"><label class="flbl">Property / Purpose</label><select class="fsel" id="drv-prop"></select></div>
+    <div class="frow2">
+      <div><label class="flbl">From</label><input type="text" class="finput" id="drv-from" placeholder="Home"></div>
+      <div><label class="flbl">To</label><input type="text" class="finput" id="drv-to" placeholder="1261 E 167th"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Miles (one way)</label><input type="number" class="finput" id="drv-miles-input" placeholder="8.5" step="0.1" oninput="calcDriveDeduction()"></div>
+      <div><label class="flbl">Date</label><input type="date" class="finput" id="drv-date"></div>
+    </div>
+    <div class="frow">
+      <label class="flbl">Round Trip?</label>
+      <div style="display:flex;gap:0.5rem;margin-top:0.2rem;">
+        <button id="rt-yes" class="toggle-btn active" onclick="setRoundTrip(true)">Yes ×2</button>
+        <button id="rt-no" class="toggle-btn" onclick="setRoundTrip(false)">One Way</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0.7rem;background:var(--surface2);">
+      <div class="clbl">Calculated Deduction</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--green);" id="drv-calc-deduction">$0.00</div>
+      <div style="font-size:0.6rem;color:var(--muted);margin-top:0.15rem;" id="drv-calc-miles">0 total miles × $0.70/mile</div>
+      <div style="font-size:0.6rem;color:var(--accent);margin-top:0.1rem;">+ 0.67 hrs will be auto-logged to Hours</div>
+    </div>
+    <div class="frow"><label class="flbl">Notes</label><input type="text" class="finput" id="drv-notes" placeholder="e.g. Contractor meeting, inspection"></div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('driveModal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveDrive()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PROPERTY MODAL -->
+<div class="overlay" id="addPropModal">
+  <div class="modal">
+    <div class="mtitle">Add <span>Property</span></div>
+    <div class="frow"><label class="flbl">Name</label><input type="text" class="finput" id="pname" placeholder="Duplex Alpha"></div>
+    <div class="frow"><label class="flbl">Address</label><input type="text" class="finput" id="paddress" placeholder="1261 E 167th St Cleveland OH 44110"></div>
+    <div class="frow2">
+      <div><label class="flbl">Units</label><input type="number" class="finput" id="punits" value="2" oninput="updatePropUnitFields()"></div>
+      <div><label class="flbl">Status</label>
+        <select class="fsel" id="pstatus">
+          <option value="active">Cash Flowing</option>
+          <option value="rehab">Rehab</option>
+          <option value="pending">Pending</option>
+        </select>
+      </div>
+    </div>
+    <div id="prop-unit-rents" style="margin-bottom:0.65rem;"></div>
+    <div class="frow2">
+      <div><label class="flbl">Purchase ($)</label><input type="number" class="finput" id="ppurchase"></div>
+      <div><label class="flbl">Current Value ($)</label><input type="number" class="finput" id="pvalue"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Mortgage Balance ($)</label><input type="number" class="finput" id="pmortgage"></div>
+      <div><label class="flbl">Monthly Expenses ($)</label><input type="number" class="finput" id="pexpenses"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Insurance / Mo ($)</label><input type="number" class="finput" id="pinsurance" value="110"></div>
+      <div><label class="flbl">Annual Taxes ($)</label><input type="number" class="finput" id="ptax"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Rehab Budget ($)</label><input type="number" class="finput" id="prehab"></div>
+      <div><label class="flbl">Rehab Spent ($)</label><input type="number" class="finput" id="prehabspent" value="0"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('addPropModal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveProperty()">Add Property</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PROPERTY MODAL -->
+<div class="overlay" id="editPropModal">
+  <div class="modal">
+    <div class="mtitle">Edit <span>Property</span></div>
+    <input type="hidden" id="ep-id">
+    <div class="frow"><label class="flbl">Name</label><input type="text" class="finput" id="ep-name"></div>
+    <div class="frow"><label class="flbl">Address</label><input type="text" class="finput" id="ep-address"></div>
+    <div class="frow2">
+      <div><label class="flbl">Units</label><input type="number" class="finput" id="ep-units" oninput="updateEditPropUnitFields()"></div>
+      <div><label class="flbl">Status</label>
+        <select class="fsel" id="ep-status">
+          <option value="pending">Pending</option>
+          <option value="rehab">Rehab</option>
+          <option value="active">Cash Flowing</option>
+        </select>
+      </div>
+    </div>
+    <div id="ep-unit-rents" style="margin-bottom:0.65rem;"></div>
+    <div class="frow2">
+      <div><label class="flbl">Purchase ($)</label><input type="number" class="finput" id="ep-purchase"></div>
+      <div><label class="flbl">Current Value ($)</label><input type="number" class="finput" id="ep-value"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Mortgage Balance ($)</label><input type="number" class="finput" id="ep-mortgage"></div>
+      <div><label class="flbl">Monthly Expenses ($)</label><input type="number" class="finput" id="ep-expenses"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Insurance / Mo ($)</label><input type="number" class="finput" id="ep-insurance"></div>
+      <div><label class="flbl">Annual Taxes ($)</label><input type="number" class="finput" id="ep-tax"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Rehab Budget ($)</label><input type="number" class="finput" id="ep-rehab"></div>
+      <div><label class="flbl">Rehab Spent ($)</label><input type="number" class="finput" id="ep-rehabspent"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('editPropModal')">Cancel</button>
+      <button class="btn-d" onclick="deleteProperty()">Delete</button>
+      <button class="btn btn-p" onclick="saveEditProperty()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT TRANSACTION MODAL -->
 <div class="overlay" id="editModal">
   <div class="modal">
     <div class="mtitle">Edit <span>Transaction</span></div>
@@ -341,50 +547,14 @@
       <input type="file" id="edit-receipt-file" accept="image/*" style="display:none;" onchange="previewEditReceipt(event)">
       <div style="display:flex;gap:0.5rem;align-items:center;">
         <button class="btn btn-s" style="flex:0;padding:0.55rem 0.8rem;font-size:0.65rem;" onclick="document.getElementById('edit-receipt-file').click()">📷 Choose Photo</button>
-        <span id="edit-receipt-name" style="font-size:0.62rem;color:var(--muted);">No new photo selected</span>
+        <span id="edit-receipt-name" style="font-size:0.62rem;color:var(--muted);">No new photo</span>
       </div>
       <img id="edit-receipt-preview" src="" style="display:none;width:100%;max-height:120px;object-fit:cover;border-radius:6px;margin-top:0.5rem;border:1px solid var(--border);">
     </div>
     <div class="btn-row">
       <button class="btn btn-s" onclick="closeModal('editModal')">Cancel</button>
-      <button class="btn" style="flex:0;padding:0.7rem 0.8rem;background:var(--red);color:white;font-size:0.65rem;border-radius:7px;" onclick="deleteTransaction()">Delete</button>
+      <button class="btn-d" onclick="deleteTransaction()">Delete</button>
       <button class="btn btn-p" onclick="saveEdit()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- ATTACH RECEIPT INPUT (hidden) -->
-<input type="file" id="attach-file" accept="image/*" style="display:none;" onchange="handleAttachReceipt(event)">
-
-<!-- DRIVE MODAL -->
-<div class="overlay" id="driveModal">
-  <div class="modal">
-    <div class="mtitle">Log <span>Drive</span></div>
-    <div class="frow"><label class="flbl">Property / Purpose</label><select class="fsel" id="drv-prop"></select></div>
-    <div class="frow2">
-      <div><label class="flbl">From</label><input type="text" class="finput" id="drv-from" placeholder="Home"></div>
-      <div><label class="flbl">To</label><input type="text" class="finput" id="drv-to" placeholder="1261 E 167th"></div>
-    </div>
-    <div class="frow2">
-      <div><label class="flbl">Miles (one way)</label><input type="number" class="finput" id="drv-miles-input" placeholder="8.5" step="0.1" oninput="calcDriveDeduction()"></div>
-      <div><label class="flbl">Date</label><input type="date" class="finput" id="drv-date"></div>
-    </div>
-    <div class="frow">
-      <label class="flbl">Round Trip?</label>
-      <div style="display:flex;gap:0.5rem;margin-top:0.2rem;">
-        <button id="rt-yes" onclick="setRoundTrip(true)" style="flex:1;padding:0.55rem;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:white;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;cursor:pointer;">Yes ×2</button>
-        <button id="rt-no" onclick="setRoundTrip(false)" style="flex:1;padding:0.55rem;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;cursor:pointer;">One Way</button>
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:0.7rem;background:var(--surface2);">
-      <div class="clbl">Calculated Deduction</div>
-      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--green);" id="drv-calc-deduction">$0.00</div>
-      <div style="font-size:0.6rem;color:var(--muted);margin-top:0.15rem;" id="drv-calc-miles">0 total miles × $0.70/mile</div>
-    </div>
-    <div class="frow"><label class="flbl">Notes</label><input type="text" class="finput" id="drv-notes" placeholder="e.g. Contractor meeting, inspection"></div>
-    <div class="btn-row">
-      <button class="btn btn-s" onclick="closeModal('driveModal')">Cancel</button>
-      <button class="btn btn-p" onclick="saveDrive()">Save</button>
     </div>
   </div>
 </div>
@@ -411,7 +581,7 @@
     <div class="frow"><label class="flbl">Notes</label><input type="text" class="finput" id="eh-notes"></div>
     <div class="btn-row">
       <button class="btn btn-s" onclick="closeModal('editHoursModal')">Cancel</button>
-      <button class="btn" style="flex:0;padding:0.7rem 0.8rem;background:var(--red);color:white;font-size:0.65rem;border-radius:7px;" onclick="deleteHours()">Delete</button>
+      <button class="btn-d" onclick="deleteHours()">Delete</button>
       <button class="btn btn-p" onclick="saveEditHours()">Save</button>
     </div>
   </div>
@@ -434,7 +604,7 @@
     <div class="frow"><label class="flbl">Notes</label><input type="text" class="finput" id="ed-notes"></div>
     <div class="btn-row">
       <button class="btn btn-s" onclick="closeModal('editDriveModal')">Cancel</button>
-      <button class="btn" style="flex:0;padding:0.7rem 0.8rem;background:var(--red);color:white;font-size:0.65rem;border-radius:7px;" onclick="deleteDrive()">Delete</button>
+      <button class="btn-d" onclick="deleteDrive()">Delete</button>
       <button class="btn btn-p" onclick="saveEditDrive()">Save</button>
     </div>
   </div>
@@ -444,33 +614,23 @@
 <div class="overlay" id="scanModal">
   <div class="modal">
     <div class="mtitle">Scan <span>Receipt</span></div>
-
-    <!-- Step 1: Camera -->
     <div id="scan-s1">
-      <div id="scan-preview" style="width:100%;aspect-ratio:4/3;background:var(--surface2);border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:1rem;overflow:hidden;position:relative;">
+      <div id="scan-preview" style="width:100%;aspect-ratio:4/3;background:var(--surface2);border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:1rem;overflow:hidden;">
         <img id="scan-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;">
-        <div id="scan-ph" style="text-align:center;color:var(--muted);">
-          <div style="font-size:2.5rem;margin-bottom:0.4rem;">📷</div>
-          <div style="font-size:0.68rem;">Tap to take photo or upload</div>
-        </div>
+        <div id="scan-ph" style="text-align:center;color:var(--muted);"><div style="font-size:2.5rem;margin-bottom:0.4rem;">📷</div><div style="font-size:0.68rem;">Tap to take photo or upload</div></div>
       </div>
       <input type="file" id="scan-file" accept="image/*" capture="environment" style="display:none;" onchange="handleScanFile(event)">
       <button class="btn btn-p" style="width:100%;margin-bottom:0.5rem;" onclick="document.getElementById('scan-file').click()">📷 &nbsp;Open Camera / Choose Photo</button>
-      <div id="scan-analyzing" style="display:none;text-align:center;padding:0.8rem;color:var(--muted);font-size:0.7rem;">
-        <div style="font-size:1.3rem;margin-bottom:0.3rem;">⏳</div>Reading receipt with AI...
-      </div>
+      <div id="scan-analyzing" style="display:none;text-align:center;padding:0.8rem;color:var(--muted);font-size:0.7rem;"><div style="font-size:1.3rem;margin-bottom:0.3rem;">⏳</div>Reading receipt with AI...</div>
     </div>
-
-    <!-- Step 2: Confirm -->
     <div id="scan-s2" style="display:none;">
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.7rem;margin-bottom:0.8rem;display:flex;gap:0.7rem;align-items:center;">
         <img id="scan-thumb" src="" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;">
-        <div style="font-size:0.62rem;color:var(--muted);line-height:1.6;">Receipt scanned · Review and confirm fields below. Edit anything the AI missed.</div>
+        <div style="font-size:0.62rem;color:var(--muted);line-height:1.6;">Receipt scanned · Review and confirm fields below.</div>
       </div>
       <div class="frow"><label class="flbl">Type</label>
         <select class="fsel" id="sc-type" onchange="toggleScanCats()">
-          <option value="expense">Expense / Cost</option>
-          <option value="income">Income / Rent</option>
+          <option value="expense">Expense / Cost</option><option value="income">Income / Rent</option>
         </select>
       </div>
       <div class="frow"><label class="flbl">Property</label><select class="fsel" id="sc-prop"></select></div>
@@ -487,7 +647,6 @@
       </div>
       <div class="frow"><label class="flbl">Vendor / Description</label><input type="text" class="finput" id="sc-desc" placeholder="Vendor name"></div>
     </div>
-
     <div class="btn-row">
       <button class="btn btn-s" onclick="closeScanModal()">Cancel</button>
       <button class="btn btn-p" id="scan-confirm-btn" style="display:none;" onclick="confirmScan()">Save Transaction</button>
@@ -495,66 +654,19 @@
   </div>
 </div>
 
-<!-- HOURS MODAL -->
-<div class="overlay" id="hoursModal">
+<!-- RENT CONFIRM MODAL -->
+<div class="overlay" id="rentConfirmModal">
   <div class="modal">
-    <div class="mtitle">Log <span>Time</span></div>
-    <div class="frow"><label class="flbl">Property</label><select class="fsel" id="hprop"></select></div>
-    <div class="frow"><label class="flbl">Activity</label>
-      <select class="fsel" id="hcat">
-        <option>Advertising & Showing</option><option>Tenant Screening & Leasing</option>
-        <option>Rent Collection</option><option>Property Inspection</option>
-        <option>Repairs & Maintenance</option><option>Contractor Supervision</option>
-        <option>Rehab Labor</option><option>Travel to Property</option>
-        <option>Bookkeeping & Admin</option><option>Other Qualifying Activity</option>
-      </select>
-    </div>
-    <div class="frow2">
-      <div><label class="flbl">Hours</label><input type="number" class="finput" id="hhrs" placeholder="1.5" step="0.25"></div>
-      <div><label class="flbl">Date</label><input type="date" class="finput" id="hdate"></div>
-    </div>
-    <div class="frow"><label class="flbl">Notes</label><input type="text" class="finput" id="hnotes" placeholder="e.g. Supervised kitchen demo"></div>
-    <div class="btn-row">
-      <button class="btn btn-s" onclick="closeModal('hoursModal')">Cancel</button>
-      <button class="btn btn-p" onclick="saveHours()">Save</button>
+    <div class="mtitle">Confirm <span>Rent Received</span></div>
+    <div id="rent-confirm-content"></div>
+    <div class="btn-row" style="margin-top:1rem;">
+      <button class="btn btn-s" onclick="closeModal('rentConfirmModal')">Done</button>
     </div>
   </div>
 </div>
 
-<!-- PROPERTY MODAL -->
-<div class="overlay" id="propModal">
-  <div class="modal">
-    <div class="mtitle">Add <span>Property</span></div>
-    <div class="frow"><label class="flbl">Name</label><input type="text" class="finput" id="pname" placeholder="Duplex Alpha"></div>
-    <div class="frow"><label class="flbl">Address</label><input type="text" class="finput" id="paddress" placeholder="44110 Cleveland OH"></div>
-    <div class="frow2">
-      <div><label class="flbl">Units</label><input type="number" class="finput" id="punits" value="2"></div>
-      <div><label class="flbl">Status</label>
-        <select class="fsel" id="pstatus">
-          <option value="active">Cash Flowing</option>
-          <option value="rehab">Rehab</option>
-          <option value="pending">Pending</option>
-        </select>
-      </div>
-    </div>
-    <div class="frow2">
-      <div><label class="flbl">Purchase ($)</label><input type="number" class="finput" id="ppurchase"></div>
-      <div><label class="flbl">Current Value ($)</label><input type="number" class="finput" id="pvalue"></div>
-    </div>
-    <div class="frow2">
-      <div><label class="flbl">Mortgage Balance ($)</label><input type="number" class="finput" id="pmortgage"></div>
-      <div><label class="flbl">Monthly Rent ($)</label><input type="number" class="finput" id="prent"></div>
-    </div>
-    <div class="frow2">
-      <div><label class="flbl">Monthly Expenses ($)</label><input type="number" class="finput" id="pexpenses"></div>
-      <div><label class="flbl">Rehab Budget ($)</label><input type="number" class="finput" id="prehab"></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-s" onclick="closeModal('propModal')">Cancel</button>
-      <button class="btn btn-p" onclick="saveProperty()">Add Property</button>
-    </div>
-  </div>
-</div>
+<!-- ATTACH RECEIPT INPUT -->
+<input type="file" id="attach-file" accept="image/*" style="display:none;" onchange="handleAttachReceipt(event)">
 
 <div class="toast" id="toast"></div>
 
@@ -562,38 +674,36 @@
 const SUPABASE_URL = 'https://glpljynntgyvttfbtppj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdscGxqeW5udGd5dnR0ZmJ0cHBqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczODcyODIsImV4cCI6MjA5Mjk2MzI4Mn0.YBQFgLdxpqAEHzcmlAL6RWwZbepr8RND1t3AdWG7t80';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const IRS_RATE = 0.70;
 
-// ── STATE ──────────────────────────────────────────────────────────────────────
-let properties = [];
-let transactions = [];
-let hours = [];
-let drives = [];
-let navValue = 400000;
+// ── STATE
+let properties = [], transactions = [], hours = [], drives = [], rentConfirmations = [], navValue = 400000;
+let roundTrip = true, scanFile = null, editReceiptFile = null, attachTargetId = null;
+let importData = [], importType = '';
 
-// ── SYNC STATUS ────────────────────────────────────────────────────────────────
+// ── SYNC STATUS
 function setSyncStatus(state, label) {
-  const dot = document.getElementById('syncDot');
-  const lbl = document.getElementById('syncLabel');
-  dot.className = 'sync-dot ' + state;
-  lbl.textContent = label;
+  document.getElementById('syncDot').className = 'sync-dot ' + state;
+  document.getElementById('syncLabel').textContent = label;
 }
 
-// ── TOAST ──────────────────────────────────────────────────────────────────────
+// ── TOAST
 function showToast(msg, err=false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast' + (err?' err':'') + ' show';
-  setTimeout(() => t.className = 'toast', 2200);
+  setTimeout(() => t.className = 'toast', 2500);
 }
 
-// ── FORMAT ─────────────────────────────────────────────────────────────────────
+// ── FORMAT
 function fmt(n) {
   n = Math.round(n||0);
   if (Math.abs(n) >= 1000000) return '$' + (n/1000000).toFixed(2) + 'M';
   return '$' + n.toLocaleString();
 }
+function today() { return new Date().toISOString().split('T')[0]; }
 
-// ── TABS ───────────────────────────────────────────────────────────────────────
+// ── TABS
 function switchTab(name, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -602,29 +712,25 @@ function switchTab(name, el) {
   render();
 }
 
-// ── MODALS ─────────────────────────────────────────────────────────────────────
+// ── MODALS
 function openModal(id) {
-  // Populate property dropdowns
-  const propSelects = ['eprop','hprop','drv-prop'];
-  propSelects.forEach(sid => {
-    const sel = document.getElementById(sid);
-    if (sel) {
-      sel.innerHTML = ['<option value="General">General / Portfolio</option>',
-        ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
-    }
+  const propOptions = ['<option value="General">General / Portfolio</option>',
+    ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
+  ['eprop','hprop','drv-prop','sc-prop','ed-prop','eh-prop','edit-prop'].forEach(sid => {
+    const el = document.getElementById(sid);
+    if (el) el.innerHTML = propOptions;
   });
-  // Set today's date
   ['edate','hdate','drv-date'].forEach(did => {
     const el = document.getElementById(did);
-    if (el && !el.value) el.value = new Date().toISOString().split('T')[0];
+    if (el && !el.value) el.value = today();
   });
-  // Reset round trip toggle when opening drive modal
   if (id === 'driveModal') { setRoundTrip(true); calcDriveDeduction(); }
+  if (id === 'addPropModal') updatePropUnitFields();
   document.getElementById(id).classList.add('open');
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// ── FAB ────────────────────────────────────────────────────────────────────────
+// ── FAB
 let fabOpen = false;
 function toggleFab() {
   fabOpen = !fabOpen;
@@ -639,40 +745,45 @@ function closeFab() {
   document.getElementById('mainFab').style.background = 'var(--accent)';
 }
 
-// ── RENDER ─────────────────────────────────────────────────────────────────────
-function render() { renderOverview(); renderExpenses(); renderHours(); renderDrives(); renderProperties(); }
+// ── RENDER ALL
+function render() { renderOverview(); renderExpenses(); renderHours(); renderDrives(); renderProperties(); renderRentBanner(); }
 
+// ── OVERVIEW
 function renderOverview() {
   const now = new Date();
   const yr = now.getFullYear();
   const mo = now.getMonth();
   document.getElementById('ov-yr').textContent = yr;
 
-  const inc = properties.reduce((s,p) => s+(p.status==='active'?(p.rent||0):0), 0);
-  const exp = properties.reduce((s,p) => s+(p.status==='active'?(p.expenses||0):0), 0);
-  const acf = (inc - exp) * 12;
+  const projInc = properties.reduce((s,p) => s + (p.status==='active' ? getUnitRentsTotal(p) : 0), 0);
+  const projExp = properties.reduce((s,p) => s + (p.status==='active' ? (p.expenses||0) : 0), 0);
+  const acf = (projInc - projExp) * 12;
   const pct = Math.min(100, Math.round((acf/125000)*100));
-  const totalValue = properties.reduce((s,p) => s+(p.value||0), 0);
-  const totalMort = properties.reduce((s,p) => s+(p.mortgage||0), 0);
-  const doors = properties.reduce((s,p) => s+(p.units||0), 0);
 
-  // This month expenses
+  // Actual this month income from confirmed rents
+  const monthKey = `${yr}-${String(mo+1).padStart(2,'0')}`;
+  const confirmedIncome = rentConfirmations
+    .filter(r => r.month === monthKey && r.status === 'received')
+    .reduce((s,r) => s+(r.amount||0), 0);
+
+  // This month expenses from log
   const monthExp = transactions
     .filter(t => { const d=new Date(t.date); return t.type==='expense'&&d.getFullYear()===yr&&d.getMonth()===mo; })
     .reduce((s,t) => s+(t.amount||0), 0);
 
-  // Hours
+  const totalValue = properties.reduce((s,p) => s+(p.value||0), 0);
+  const totalMort = properties.reduce((s,p) => s+(p.mortgage||0), 0);
+  const doors = properties.reduce((s,p) => s+(p.units||0), 0);
+
   const yHours = hours.filter(h => new Date(h.date).getFullYear()===yr);
-  const mHours = hours.filter(h => { const d=new Date(h.date); return d.getFullYear()===yr&&d.getMonth()===mo; });
   const totHrs = yHours.reduce((s,h) => s+h.hrs, 0);
-  const moHrs = mHours.reduce((s,h) => s+h.hrs, 0);
   const hrsPct = Math.min(100, Math.round((totHrs/250)*100));
 
   document.getElementById('ov-cf').textContent = fmt(acf);
   document.getElementById('ov-bar').style.width = pct+'%';
   document.getElementById('ov-pct').textContent = pct+'% of target';
-  document.getElementById('ov-inc').textContent = fmt(inc);
-  document.getElementById('ov-exp').textContent = fmt(exp);
+  document.getElementById('ov-inc').textContent = fmt(confirmedIncome || projInc);
+  document.getElementById('ov-exp').textContent = fmt(monthExp);
   document.getElementById('ov-props').textContent = properties.length;
   document.getElementById('ov-doors').textContent = doors+' / 24 doors';
   document.getElementById('ov-eq').textContent = fmt(Math.max(0, totalValue-totalMort));
@@ -681,19 +792,117 @@ function renderOverview() {
   document.getElementById('ov-hrs').textContent = totHrs.toFixed(1)+' hrs';
   document.getElementById('ov-hbar').style.width = hrsPct+'%';
   document.getElementById('ov-hpct').textContent = hrsPct+'% of 250hr safe harbor';
-
   const navPct = Math.min(100, Math.round((navValue/1000000)*100));
   document.getElementById('ov-nav').textContent = fmt(navValue);
   document.getElementById('ov-navbar').style.width = navPct+'%';
   document.getElementById('ov-navpct').textContent = navPct+'% of $1M';
 }
 
+// ── RENT BANNER
+function renderRentBanner() {
+  const now = new Date();
+  const day = now.getDate();
+  const yr = now.getFullYear();
+  const mo = now.getMonth();
+  const monthKey = `${yr}-${String(mo+1).padStart(2,'0')}`;
+  const monthName = now.toLocaleString('default',{month:'long'});
+  const container = document.getElementById('rent-banner-container');
+
+  if (day < 3) { container.innerHTML = ''; return; }
+
+  const activeProps = properties.filter(p => p.status === 'active');
+  if (!activeProps.length) { container.innerHTML = ''; return; }
+
+  // Find props that still need confirmation this month
+  const needsConfirm = activeProps.filter(p => {
+    const units = p.units || 1;
+    const unitRents = p.unit_rents || {};
+    for (let u = 1; u <= units; u++) {
+      const key = `${p.id}_unit${u}_${monthKey}`;
+      const confirmed = rentConfirmations.find(r => r.property_id === p.id && r.unit_number === u && r.month === monthKey);
+      if (!confirmed) return true;
+    }
+    return false;
+  });
+
+  if (!needsConfirm.length) { container.innerHTML = ''; return; }
+
+  container.innerHTML = `
+    <div class="rent-banner">
+      <div class="rent-banner-title">🏠 ${monthName} Rent — Confirm Receipt</div>
+      ${needsConfirm.map(p => {
+        const units = p.units || 1;
+        const unitRents = p.unit_rents || {};
+        return needsConfirmUnits(p, units, unitRents, monthKey);
+      }).join('')}
+    </div>`;
+}
+
+function needsConfirmUnits(p, units, unitRents, monthKey) {
+  let html = `<div style="font-size:0.7rem;font-weight:600;margin:0.5rem 0 0.3rem;">${p.name}</div>`;
+  for (let u = 1; u <= units; u++) {
+    const confirmed = rentConfirmations.find(r => r.property_id === p.id && r.unit_number === u && r.month === monthKey);
+    const defaultAmt = unitRents[`unit${u}`] || 0;
+    if (!confirmed) {
+      html += `<div class="unit-confirm-row">
+        <span>Unit ${u} — ${fmt(defaultAmt)}</span>
+        <div class="unit-btn-group">
+          <button class="unit-btn" onclick="confirmRent('${p.id}','${p.name}',${u},${defaultAmt},'${monthKey}','received')">✓ Received</button>
+          <button class="unit-btn" onclick="confirmRent('${p.id}','${p.name}',${u},${defaultAmt},'${monthKey}','partial')">Partial</button>
+          <button class="unit-btn" onclick="confirmRent('${p.id}','${p.name}',${u},${defaultAmt},'${monthKey}','late')">Late</button>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="unit-confirm-row">
+        <span>Unit ${u} — ${fmt(confirmed.amount)}</span>
+        <span style="color:${confirmed.status==='received'?'var(--green)':confirmed.status==='partial'?'var(--accent)':'var(--red)'};font-size:0.65rem;text-transform:uppercase;">${confirmed.status}</span>
+      </div>`;
+    }
+  }
+  return html;
+}
+
+async function confirmRent(propId, propName, unitNum, defaultAmt, monthKey, status) {
+  let amount = defaultAmt;
+  if (status === 'partial') {
+    const input = prompt(`How much was received for Unit ${unitNum}?`, defaultAmt);
+    if (!input) return;
+    amount = parseFloat(input) || defaultAmt;
+  }
+  setSyncStatus('syncing', 'Saving...');
+  const { error } = await sb.from('rent_confirmations').insert({
+    property_id: propId,
+    property_name: propName,
+    unit_number: unitNum,
+    month: monthKey,
+    year: new Date().getFullYear(),
+    amount,
+    status,
+    confirmed_at: new Date().toISOString(),
+  });
+  if (error) { showToast('Save failed: '+error.message, true); setSyncStatus('error','Error'); return; }
+  // Auto-log as income transaction
+  if (status === 'received' || status === 'partial') {
+    await sb.from('transactions').insert({
+      type: 'income',
+      property: propName,
+      category: 'Rent Payment',
+      amount,
+      date: today(),
+      description: `Unit ${unitNum} rent — ${monthKey}`,
+    });
+  }
+  showToast(`Unit ${unitNum} marked ${status} ✓`);
+  await loadAll();
+}
+
+// ── EXPENSES
 function renderExpenses() {
   const el = document.getElementById('exp-list');
   if (!transactions.length) { el.innerHTML = '<div class="empty">No transactions yet.<br>Tap + to log or scan a receipt.</div>'; return; }
   el.innerHTML = [...transactions].reverse().map(t => {
     const thumb = t.receipt_url
-      ? `<img src="${t.receipt_url}" onclick="viewReceipt('${t.receipt_url}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;border:1px solid var(--border);" title="Tap to view receipt">`
+      ? `<img src="${t.receipt_url}" onclick="viewReceipt('${t.receipt_url}')" style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;cursor:pointer;border:1px solid var(--border);">`
       : `<div onclick="attachReceipt('${t.id}')" style="width:40px;height:40px;background:var(--surface2);border-radius:6px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:0.75rem;color:var(--muted);flex-shrink:0;cursor:pointer;" title="Tap to attach receipt">${t.type==='income'?'💰':'📎'}</div>`;
     return `<div class="exp-item">
       ${thumb}
@@ -703,7 +912,7 @@ function renderExpenses() {
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0;">
         <div class="exp-amt ${t.type==='income'?'inc':''}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div>
-        <button onclick="openEditModal('${t.id}')" style="font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;">Edit</button>
+        <button class="edit-btn" onclick="openEditModal('${t.id}')">Edit</button>
       </div>
     </div>`;
   }).join('');
@@ -719,31 +928,27 @@ function viewReceipt(url) {
   document.body.appendChild(ov);
 }
 
+// ── HOURS
 function renderHours() {
   const now = new Date();
-  const yr = now.getFullYear();
-  const mo = now.getMonth();
+  const yr = now.getFullYear(), mo = now.getMonth();
   const yH = hours.filter(h => new Date(h.date).getFullYear()===yr);
   const mH = hours.filter(h => { const d=new Date(h.date); return d.getFullYear()===yr&&d.getMonth()===mo; });
   const tot = yH.reduce((s,h) => s+h.hrs, 0);
   const moT = mH.reduce((s,h) => s+h.hrs, 0);
   const pct = Math.min(100, Math.round((tot/250)*100));
-  const rem = Math.max(0, 250-tot);
-
   document.getElementById('hrs-total').textContent = tot.toFixed(1)+' hrs';
   document.getElementById('hrs-bar').style.width = pct+'%';
-  document.getElementById('hrs-pct').textContent = pct+'% of 250hr safe harbor';
+  document.getElementById('hrs-pct').textContent = pct+'% of safe harbor';
   document.getElementById('hrs-month').textContent = moT.toFixed(1)+' hrs';
   document.getElementById('hrs-remaining').textContent = tot>=250
     ? '✓ Safe harbor met — QBI deduction qualified for '+yr
-    : rem.toFixed(1)+' more hours needed.';
-
+    : (250-tot).toFixed(1)+' more hours needed.';
   const byProp = {};
   yH.forEach(h => { byProp[h.property]=(byProp[h.property]||0)+h.hrs; });
   document.getElementById('hrs-byprop').innerHTML = Object.keys(byProp).length
     ? Object.entries(byProp).map(([p,h]) => `<div>${p}: <span style="color:var(--accent);">${h.toFixed(1)}h</span></div>`).join('')
     : '—';
-
   const listEl = document.getElementById('hrs-list');
   if (!hours.length) { listEl.innerHTML = '<div class="empty">No hours logged yet.<br>Tap + to log time.</div>'; return; }
   listEl.innerHTML = [...hours].reverse().map(h => `
@@ -755,66 +960,168 @@ function renderHours() {
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0;">
         <div style="font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:600;color:var(--accent);">${h.hrs}h</div>
-        <button onclick="openEditHoursModal('${h.id}')" style="font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;">Edit</button>
+        <button class="edit-btn" onclick="openEditHoursModal('${h.id}')">Edit</button>
       </div>
     </div>`).join('');
+}
+
+// ── DRIVES
+function renderDrives() {
+  const now = new Date();
+  const yr = now.getFullYear(), mo = now.getMonth();
+  const yD = drives.filter(d => new Date(d.date).getFullYear()===yr);
+  const mD = drives.filter(d => { const dt=new Date(d.date); return dt.getFullYear()===yr&&dt.getMonth()===mo; });
+  const totalMiles = yD.reduce((s,d) => s+(d.total_miles||0), 0);
+  const totalDed = yD.reduce((s,d) => s+(d.deduction||0), 0);
+  const monthMiles = mD.reduce((s,d) => s+(d.total_miles||0), 0);
+  document.getElementById('drv-miles').textContent = totalMiles.toFixed(1);
+  document.getElementById('drv-deduction').textContent = '$'+totalDed.toFixed(2);
+  document.getElementById('drv-month').textContent = monthMiles.toFixed(1)+' mi';
+  document.getElementById('drv-count').textContent = drives.length;
+  const summEl = document.getElementById('drv-summary');
+  if (yD.length) {
+    const byProp = {};
+    yD.forEach(d => { byProp[d.property]=(byProp[d.property]||0)+(d.total_miles||0); });
+    summEl.innerHTML = `<strong>${yr}:</strong> ${totalMiles.toFixed(1)} mi · $${totalDed.toFixed(2)} deduction<br>`
+      + Object.entries(byProp).map(([p,m]) => `${p}: ${m.toFixed(1)} mi ($${(m*IRS_RATE).toFixed(2)})`).join(' · ');
+  } else { summEl.textContent = 'No drives logged yet.'; }
+  const listEl = document.getElementById('drv-list');
+  if (!drives.length) { listEl.innerHTML = '<div class="empty">No drives logged yet.<br>Tap + to log a drive.</div>'; return; }
+  listEl.innerHTML = drives.map(d => `
+    <div class="exp-item">
+      <div style="width:34px;height:34px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">🚗</div>
+      <div style="flex:1;min-width:0;">
+        <div class="exp-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.origin||''} → ${d.destination||''}</div>
+        <div class="exp-meta">${d.property} · ${d.total_miles} mi · ${d.date}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0;">
+        <div style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:600;color:var(--green);">$${(d.deduction||0).toFixed(2)}</div>
+        <button class="edit-btn" onclick="openEditDriveModal('${d.id}')">Edit</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── PROPERTIES
+function getUnitRentsTotal(p) {
+  if (!p.unit_rents) return p.rent||0;
+  const rents = p.unit_rents;
+  let total = 0;
+  for (let u = 1; u <= (p.units||1); u++) { total += parseFloat(rents[`unit${u}`]||0); }
+  return total || (p.rent||0);
 }
 
 function renderProperties() {
   const el = document.getElementById('prop-list');
   if (!properties.length) { el.innerHTML = '<div class="empty">No properties yet.<br>Add your first below.</div>'; return; }
+  const now = new Date();
+  const yr = now.getFullYear(), mo = now.getMonth();
   const statusLabel = {active:'Cash Flowing', rehab:'Rehab', pending:'Pending'};
   const statusColor = {active:'var(--green)', rehab:'var(--accent)', pending:'var(--blue)'};
+
   el.innerHTML = properties.map(p => {
-    const nm = (p.rent||0)-(p.expenses||0);
-    const na = nm*12;
+    const totalRent = getUnitRentsTotal(p);
+    const unitRents = p.unit_rents || {};
+    const insurance = p.insurance || 110;
+    const taxMonthly = (p.tax_annual||0)/12;
+    const totalExp = (p.expenses||0) + insurance + taxMonthly;
+    const nm = totalRent - totalExp;
+    const na = nm * 12;
     const eq = (p.value||0)-(p.mortgage||0);
+
+    // This month expenses from log
+    const mthExp = transactions
+      .filter(t => { const d=new Date(t.date); return t.property===p.name&&t.type==='expense'&&d.getFullYear()===yr&&d.getMonth()===mo; })
+      .reduce((s,t) => s+(t.amount||0), 0);
+    const ytdExp = transactions
+      .filter(t => { return t.property===p.name&&t.type==='expense'&&new Date(t.date).getFullYear()===yr; })
+      .reduce((s,t) => s+(t.amount||0), 0);
+
+    // Payment history dots — last 6 months
+    const dots = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(yr, mo-i, 1);
+      const mk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const confs = rentConfirmations.filter(r => r.property_id === p.id && r.month === mk);
+      let dotClass = 'pending';
+      if (confs.length > 0) {
+        if (confs.every(c => c.status==='received')) dotClass = 'paid';
+        else if (confs.some(c => c.status==='late')) dotClass = 'late';
+        else dotClass = 'partial';
+      }
+      dots.push(`<div class="dot ${dotClass}" title="${mk}"></div>`);
+    }
+
+    // Unit rent breakdown
+    const unitRentRows = [];
+    for (let u = 1; u <= (p.units||1); u++) {
+      const amt = unitRents[`unit${u}`] || 0;
+      unitRentRows.push(`<div class="row"><span class="l">Unit ${u} Rent</span><span style="color:var(--green);">${fmt(amt)}</span></div>`);
+    }
+
     return `<div class="card full" style="margin-bottom:0.7rem;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.7rem;">
         <div>
           <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;">${p.name}</div>
           <div style="font-size:0.58rem;color:var(--muted);margin-top:0.08rem;">${p.address}</div>
         </div>
-        <div style="font-size:0.5rem;letter-spacing:0.08em;text-transform:uppercase;padding:0.18rem 0.45rem;border-radius:20px;border:1px solid ${statusColor[p.status]};color:${statusColor[p.status]};background:${statusColor[p.status]}18;white-space:nowrap;">${statusLabel[p.status]||p.status}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;">
+          <div style="font-size:0.5rem;letter-spacing:0.08em;text-transform:uppercase;padding:0.18rem 0.45rem;border-radius:20px;border:1px solid ${statusColor[p.status]||'var(--muted)'};color:${statusColor[p.status]||'var(--muted)'};white-space:nowrap;">${statusLabel[p.status]||p.status}</div>
+          <button class="edit-btn" onclick="openEditPropModal('${p.id}')">Edit</button>
+        </div>
       </div>
       <div class="row"><span class="l">Units</span><span>${p.units}</span></div>
-      <div class="row"><span class="l">Monthly Rent</span><span style="color:var(--green);">${fmt(p.rent||0)}</span></div>
-      <div class="row"><span class="l">Monthly Expenses</span><span style="color:var(--red);">${fmt(p.expenses||0)}</span></div>
+      ${unitRentRows.join('')}
+      <div class="row"><span class="l">Total Rent / Mo</span><span style="color:var(--green);font-weight:600;">${fmt(totalRent)}</span></div>
+      <div class="row"><span class="l">Insurance / Mo</span><span style="color:var(--red);">${fmt(insurance)}</span></div>
+      <div class="row"><span class="l">Taxes / Mo</span><span style="color:var(--red);">${fmt(taxMonthly)}</span></div>
+      <div class="row"><span class="l">Other Expenses / Mo</span><span style="color:var(--red);">${fmt(p.expenses||0)}</span></div>
       <div class="row"><span class="l">Net Monthly CF</span><span style="color:${nm>=0?'var(--green)':'var(--red)'};">${fmt(nm)}</span></div>
       <div class="row"><span class="l">Net Annual CF</span><span style="color:${na>=0?'var(--green)':'var(--red)'};">${fmt(na)}</span></div>
       <div class="row"><span class="l">Current Value</span><span>${fmt(p.value||0)}</span></div>
       <div class="row"><span class="l">Mortgage</span><span style="color:var(--red);">${fmt(p.mortgage||0)}</span></div>
       <div class="row"><span class="l">Equity</span><span style="color:var(--accent);">${fmt(eq)}</span></div>
-      ${p.rehab_budget>0?`<div style="background:var(--surface2);border-radius:4px;height:5px;margin:0.5rem 0 0.2rem;overflow:hidden;"><div style="height:100%;width:${Math.min(100,Math.round(((p.rehab_spent||0)/p.rehab_budget)*100))}%;background:var(--accent);border-radius:4px;"></div></div><div style="display:flex;justify-content:space-between;font-size:0.54rem;color:var(--muted);"><span>Rehab: ${fmt(p.rehab_spent||0)}</span><span>${fmt(p.rehab_budget)} budget</span></div>`:''}
+      <div class="row"><span class="l">MTD Expenses (logged)</span><span style="color:var(--red);">${fmt(mthExp)}</span></div>
+      <div class="row"><span class="l">YTD Expenses (logged)</span><span style="color:var(--red);">${fmt(ytdExp)}</span></div>
+      <div style="margin-top:0.6rem;">
+        <div class="clbl" style="margin-bottom:0.3rem;">Payment History — Last 6 Months</div>
+        <div class="dot-row">${dots.join('')}</div>
+        <div style="display:flex;gap:0.8rem;margin-top:0.3rem;font-size:0.55rem;color:var(--muted);">
+          <span>🟢 Paid</span><span>🟡 Partial</span><span>🔴 Late</span><span>⚪ Pending</span>
+        </div>
+      </div>
+      ${p.rehab_budget>0?`<div style="margin-top:0.6rem;"><div class="clbl" style="margin-bottom:0.2rem;">Rehab Progress</div><div style="background:var(--surface2);border-radius:4px;height:5px;overflow:hidden;"><div style="height:100%;width:${Math.min(100,Math.round(((p.rehab_spent||0)/p.rehab_budget)*100))}%;background:var(--accent);border-radius:4px;"></div></div><div style="display:flex;justify-content:space-between;font-size:0.54rem;color:var(--muted);margin-top:0.2rem;"><span>${fmt(p.rehab_spent||0)} spent</span><span>${fmt(p.rehab_budget)} budget</span></div></div>`:''}
     </div>`;
   }).join('');
 }
 
-// ── SUPABASE CRUD ──────────────────────────────────────────────────────────────
+// ── SUPABASE LOAD
 async function loadAll() {
   setSyncStatus('syncing', 'Syncing...');
   try {
-    const [pRes, tRes, hRes, sRes, dRes] = await Promise.all([
+    const [pRes, tRes, hRes, sRes, dRes, rRes] = await Promise.all([
       sb.from('properties').select('*').order('created_at'),
       sb.from('transactions').select('*').order('created_at', {ascending:false}),
       sb.from('hours').select('*').order('created_at', {ascending:false}),
       sb.from('settings').select('*'),
       sb.from('drives').select('*').order('created_at', {ascending:false}),
+      sb.from('rent_confirmations').select('*').order('created_at', {ascending:false}),
     ]);
     properties = pRes.data || [];
     transactions = tRes.data || [];
     hours = hRes.data || [];
     drives = dRes.data || [];
+    rentConfirmations = rRes.data || [];
     const navSetting = (sRes.data||[]).find(s => s.key==='nav');
     if (navSetting) { navValue = parseFloat(navSetting.value)||400000; document.getElementById('nav-input').value = navValue; }
     setSyncStatus('synced', 'Synced');
     render();
   } catch(e) {
     setSyncStatus('error', 'Sync error');
-    showToast('Could not connect to database', true);
+    showToast('Could not connect', true);
   }
 }
 
+// ── SAVE EXPENSE
 async function saveExpense() {
   const amt = parseFloat(document.getElementById('eamt').value)||0;
   if (!amt) { showToast('Enter an amount', true); return; }
@@ -823,18 +1130,17 @@ async function saveExpense() {
     type: document.getElementById('et').value,
     property: document.getElementById('eprop').value,
     category: document.getElementById('ecat').value,
-    amount: amt,
-    date: document.getElementById('edate').value,
+    amount: amt, date: document.getElementById('edate').value,
     description: document.getElementById('edesc').value,
   });
-  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+  if (error) { showToast('Save failed: '+error.message, true); setSyncStatus('error','Error'); return; }
   closeModal('expModal');
-  document.getElementById('eamt').value='';
-  document.getElementById('edesc').value='';
+  document.getElementById('eamt').value=''; document.getElementById('edesc').value='';
   showToast('Transaction saved ✓');
   await loadAll();
 }
 
+// ── SAVE HOURS
 async function saveHours() {
   const hrs = parseFloat(document.getElementById('hhrs').value)||0;
   if (!hrs) { showToast('Enter hours', true); return; }
@@ -842,220 +1148,278 @@ async function saveHours() {
   const { error } = await sb.from('hours').insert({
     property: document.getElementById('hprop').value,
     activity: document.getElementById('hcat').value,
-    hrs,
-    date: document.getElementById('hdate').value,
+    hrs, date: document.getElementById('hdate').value,
     notes: document.getElementById('hnotes').value,
   });
   if (error) { showToast('Save failed: '+error.message, true); setSyncStatus('error','Error'); return; }
   closeModal('hoursModal');
-  document.getElementById('hhrs').value='';
-  document.getElementById('hnotes').value='';
+  document.getElementById('hhrs').value=''; document.getElementById('hnotes').value='';
   showToast('Time logged ✓');
   await loadAll();
 }
 
-async function saveProperty() {
-  const name = document.getElementById('pname').value;
-  if (!name) { showToast('Enter a property name', true); return; }
-  setSyncStatus('syncing', 'Saving...');
-  const { error } = await sb.from('properties').insert({
-    name,
-    address: document.getElementById('paddress').value,
-    units: parseInt(document.getElementById('punits').value)||2,
-    status: document.getElementById('pstatus').value,
-    purchase: parseFloat(document.getElementById('ppurchase').value)||0,
-    value: parseFloat(document.getElementById('pvalue').value)||0,
-    mortgage: parseFloat(document.getElementById('pmortgage').value)||0,
-    rent: parseFloat(document.getElementById('prent').value)||0,
-    expenses: parseFloat(document.getElementById('pexpenses').value)||0,
-    rehab_budget: parseFloat(document.getElementById('prehab').value)||0,
-    rehab_spent: 0,
-  });
-  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
-  closeModal('propModal');
-  showToast('Property added ✓');
-  await loadAll();
-}
-
-async function updateNAV() {
-  const val = parseFloat(document.getElementById('nav-input').value)||0;
-  navValue = val;
-  setSyncStatus('syncing', 'Saving...');
-  await sb.from('settings').upsert({ key:'nav', value: String(val) }, { onConflict:'key' });
-  setSyncStatus('synced', 'Synced');
-  render();
-  showToast('Portfolio updated ✓');
-}
-
-function toggleExpCats() {
-  const t = document.getElementById('et').value;
-  document.getElementById('ecat').innerHTML = t==='income'
-    ? '<option>Rent Payment</option><option>Other Income</option>'
-    : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
-}
-
-// ── UNDERWRITER ────────────────────────────────────────────────────────────────
-function calcUW() {
-  const price=parseFloat(document.getElementById('uw-price').value)||0;
-  const units=parseInt(document.getElementById('uw-units').value)||2;
-  const rehab=parseFloat(document.getElementById('uw-rehab').value)||0;
-  const rentPU=parseFloat(document.getElementById('uw-rent').value)||0;
-  const downPct=(parseFloat(document.getElementById('uw-down').value)||25)/100;
-  const rate=(parseFloat(document.getElementById('uw-rate').value)||6.3)/100/12;
-  if(!price||!rentPU) return;
-
-  const basis=price+rehab;
-  const cash=price*downPct+rehab;
-  const loan=price*(1-downPct);
-  const n=360;
-  const mort=rate>0?loan*(rate*Math.pow(1+rate,n))/(Math.pow(1+rate,n)-1):loan/n;
-  const gross=rentPU*units;
-  const noi=gross*(1-0.08-0.30);
-  const netMo=noi-mort;
-  const netYr=netMo*12;
-  const capRate=(noi*12/basis)*100;
-  const coc=(netYr/cash)*100;
-  const onePct=gross/basis*100;
-
-  document.getElementById('uw-results').style.display='grid';
-  document.getElementById('uw-basis').textContent=fmt(basis);
-  document.getElementById('uw-cash').textContent=fmt(cash);
-  document.getElementById('uw-gross').textContent=fmt(gross);
-  document.getElementById('uw-mort').textContent=fmt(mort);
-
-  const nmel=document.getElementById('uw-netmo');
-  nmel.textContent=fmt(netMo); nmel.style.color=netMo>=0?'var(--green)':'var(--red)';
-  const nyel=document.getElementById('uw-netyr');
-  nyel.textContent=fmt(netYr); nyel.style.color=netYr>=0?'var(--green)':'var(--red)';
-
-  const cel=document.getElementById('uw-cap');
-  cel.textContent=capRate.toFixed(1)+'%';
-  cel.style.color=capRate>=10?'var(--green)':capRate>=8?'var(--accent)':'var(--red)';
-
-  const cocEl=document.getElementById('uw-coc');
-  cocEl.textContent=coc.toFixed(1)+'%';
-  cocEl.style.color=coc>=10?'var(--green)':coc>=8?'var(--accent)':'var(--red)';
-
-  const opEl=document.getElementById('uw-onepct');
-  opEl.style.color=onePct>=1?'var(--green)':'var(--red)';
-  opEl.textContent=onePct>=1
-    ? '✓ Passes — '+onePct.toFixed(2)+'% ('+fmt(gross)+'/mo on '+fmt(basis)+' basis)'
-    : '✗ Fails — '+onePct.toFixed(2)+'% (need '+fmt(basis*0.01)+'/mo, have '+fmt(gross)+')';
-
-  const vEl=document.getElementById('uw-verdict');
-  const vtEl=document.getElementById('uw-vtext');
-  vEl.style.display='block';
-  let verdict,vColor;
-  if(capRate>=12&&coc>=10&&netMo>400&&onePct>=1){
-    verdict='🟢 Strong Deal — all Soda Rock criteria met. Cap '+capRate.toFixed(1)+'%, CoC '+coc.toFixed(1)+'%, +'+fmt(netMo)+'/mo. Pull the trigger if rehab is validated.';
-    vColor='var(--green)';
-  } else if(capRate>=9&&netMo>0){
-    verdict='🟡 Acceptable — decent but not exceptional. Cap '+capRate.toFixed(1)+'%. Negotiate purchase price down or push rents higher.';
-    vColor='var(--accent)';
-  } else if(netMo<0){
-    verdict='🔴 Negative Cash Flow — loses money monthly. Walk away or renegotiate significantly.';
-    vColor='var(--red)';
-  } else {
-    verdict='🔴 Weak Deal — below Soda Rock thresholds. Cap '+capRate.toFixed(1)+'% too thin. Need lower price, lower rehab, or higher rents.';
-    vColor='var(--red)';
-  }
-  vtEl.textContent=verdict;
-  vEl.style.borderLeftColor=vColor;
-}
-
-// ── DRIVES ─────────────────────────────────────────────────────────────────────
-const IRS_RATE = 0.70;
-let roundTrip = true;
-
+// ── DRIVE
 function setRoundTrip(val) {
   roundTrip = val;
-  document.getElementById('rt-yes').style.background = val ? 'var(--accent)' : 'var(--surface2)';
-  document.getElementById('rt-yes').style.color = val ? 'white' : 'var(--muted)';
-  document.getElementById('rt-yes').style.borderColor = val ? 'var(--accent)' : 'var(--border)';
-  document.getElementById('rt-no').style.background = !val ? 'var(--accent)' : 'var(--surface2)';
-  document.getElementById('rt-no').style.color = !val ? 'white' : 'var(--muted)';
-  document.getElementById('rt-no').style.borderColor = !val ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('rt-yes').className = 'toggle-btn' + (val?' active':'');
+  document.getElementById('rt-no').className = 'toggle-btn' + (!val?' active':'');
   calcDriveDeduction();
 }
-
 function calcDriveDeduction() {
   const oneway = parseFloat(document.getElementById('drv-miles-input').value)||0;
-  const total = roundTrip ? oneway * 2 : oneway;
-  const ded = total * IRS_RATE;
-  document.getElementById('drv-calc-deduction').textContent = '$' + ded.toFixed(2);
-  document.getElementById('drv-calc-miles').textContent = total.toFixed(1) + ' total miles × $0.70/mile';
-}
-
-function renderDrives() {
-  const now = new Date();
-  const yr = now.getFullYear();
-  const mo = now.getMonth();
-  const yDrives = drives.filter(d => new Date(d.date).getFullYear() === yr);
-  const mDrives = drives.filter(d => { const dt=new Date(d.date); return dt.getFullYear()===yr&&dt.getMonth()===mo; });
-  const totalMiles = yDrives.reduce((s,d) => s+(d.total_miles||0), 0);
-  const totalDed = yDrives.reduce((s,d) => s+(d.deduction||0), 0);
-  const monthMiles = mDrives.reduce((s,d) => s+(d.total_miles||0), 0);
-
-  document.getElementById('drv-miles').textContent = totalMiles.toFixed(1);
-  document.getElementById('drv-deduction').textContent = '$' + totalDed.toFixed(2);
-  document.getElementById('drv-month').textContent = monthMiles.toFixed(1) + ' mi';
-  document.getElementById('drv-count').textContent = drives.length;
-
-  // CPA summary
-  const summEl = document.getElementById('drv-summary');
-  if (yDrives.length) {
-    const byProp = {};
-    yDrives.forEach(d => { byProp[d.property]=(byProp[d.property]||0)+(d.total_miles||0); });
-    summEl.innerHTML = `<strong>${yr} Summary:</strong> ${totalMiles.toFixed(1)} total miles · $${totalDed.toFixed(2)} deduction at $0.70/mile<br>` +
-      Object.entries(byProp).map(([p,m]) => `${p}: ${m.toFixed(1)} mi ($${(m*IRS_RATE).toFixed(2)})`).join(' · ');
-  } else {
-    summEl.textContent = 'No drives logged yet.';
-  }
-
-  const listEl = document.getElementById('drv-list');
-  if (!drives.length) { listEl.innerHTML = '<div class="empty">No drives logged yet.<br>Tap + to log a drive.</div>'; return; }
-  listEl.innerHTML = drives.map(d => `
-    <div class="exp-item">
-      <div style="width:34px;height:34px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">🚗</div>
-      <div style="flex:1;min-width:0;">
-        <div class="exp-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.origin||''} → ${d.destination||''}</div>
-        <div class="exp-meta">${d.property} · ${d.total_miles} mi · ${d.date}${d.notes?' · '+d.notes:''}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0;">
-        <div style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:600;color:var(--green);">$${(d.deduction||0).toFixed(2)}</div>
-        <button onclick="openEditDriveModal('${d.id}')" style="font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;">Edit</button>
-      </div>
-    </div>`).join('');
+  const total = roundTrip ? oneway*2 : oneway;
+  document.getElementById('drv-calc-deduction').textContent = '$'+(total*IRS_RATE).toFixed(2);
+  document.getElementById('drv-calc-miles').textContent = total.toFixed(1)+' total miles × $0.70/mile';
 }
 
 async function saveDrive() {
   const oneway = parseFloat(document.getElementById('drv-miles-input').value)||0;
   if (!oneway) { showToast('Enter miles', true); return; }
-  const total = roundTrip ? oneway * 2 : oneway;
+  const total = roundTrip ? oneway*2 : oneway;
   const deduction = total * IRS_RATE;
+  const autoHrs = roundTrip ? 0.67 : 0.33;
+  const prop = document.getElementById('drv-prop').value;
+  const from = document.getElementById('drv-from').value;
+  const to = document.getElementById('drv-to').value;
+  const driveDate = document.getElementById('drv-date').value;
   setSyncStatus('syncing', 'Saving...');
-  const { error } = await sb.from('drives').insert({
-    property: document.getElementById('drv-prop').value,
-    origin: document.getElementById('drv-from').value,
-    destination: document.getElementById('drv-to').value,
-    miles: oneway,
-    round_trip: roundTrip,
-    total_miles: total,
-    deduction,
-    date: document.getElementById('drv-date').value,
-    notes: document.getElementById('drv-notes').value,
-  });
-  if (error) { showToast('Save failed: '+error.message, true); setSyncStatus('error','Error'); return; }
+  const [driveRes, hoursRes] = await Promise.all([
+    sb.from('drives').insert({ property:prop, origin:from, destination:to, miles:oneway, round_trip:roundTrip, total_miles:total, deduction, date:driveDate, notes:document.getElementById('drv-notes').value }),
+    sb.from('hours').insert({ property:prop, activity:'Travel to Property', hrs:autoHrs, date:driveDate, notes:`Auto-logged from drive: ${from} → ${to}` }),
+  ]);
+  if (driveRes.error) { showToast('Save failed: '+driveRes.error.message, true); setSyncStatus('error','Error'); return; }
   closeModal('driveModal');
-  document.getElementById('drv-miles-input').value='';
-  document.getElementById('drv-notes').value='';
-  showToast('Drive logged ✓');
+  document.getElementById('drv-miles-input').value=''; document.getElementById('drv-notes').value='';
+  showToast(`Drive saved + ${autoHrs}h auto-logged ✓`);
   await loadAll();
 }
 
+// ── PROPERTY UNIT RENT FIELDS
+function updatePropUnitFields() {
+  const units = parseInt(document.getElementById('punits').value)||2;
+  const container = document.getElementById('prop-unit-rents');
+  let html = '<div style="margin-bottom:0.3rem;"><label class="flbl">Rent Per Unit</label></div>';
+  for (let u = 1; u <= units; u++) {
+    html += `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">
+      <label style="font-size:0.65rem;color:var(--muted);width:50px;flex-shrink:0;">Unit ${u}</label>
+      <input type="number" class="finput" id="punit${u}" placeholder="1050" style="flex:1;">
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function updateEditPropUnitFields() {
+  const units = parseInt(document.getElementById('ep-units').value)||2;
+  const container = document.getElementById('ep-unit-rents');
+  let html = '<div style="margin-bottom:0.3rem;"><label class="flbl">Rent Per Unit</label></div>';
+  for (let u = 1; u <= units; u++) {
+    html += `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">
+      <label style="font-size:0.65rem;color:var(--muted);width:50px;flex-shrink:0;">Unit ${u}</label>
+      <input type="number" class="finput" id="epunit${u}" placeholder="1050" style="flex:1;">
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+// ── SAVE PROPERTY
+async function saveProperty() {
+  const name = document.getElementById('pname').value;
+  if (!name) { showToast('Enter a property name', true); return; }
+  const units = parseInt(document.getElementById('punits').value)||2;
+  const unitRents = {};
+  let totalRent = 0;
+  for (let u = 1; u <= units; u++) {
+    const amt = parseFloat(document.getElementById(`punit${u}`)?.value)||0;
+    unitRents[`unit${u}`] = amt;
+    totalRent += amt;
+  }
+  setSyncStatus('syncing', 'Saving...');
+  const { error } = await sb.from('properties').insert({
+    name, address: document.getElementById('paddress').value,
+    units, status: document.getElementById('pstatus').value,
+    purchase: parseFloat(document.getElementById('ppurchase').value)||0,
+    value: parseFloat(document.getElementById('pvalue').value)||0,
+    mortgage: parseFloat(document.getElementById('pmortgage').value)||0,
+    rent: totalRent,
+    expenses: parseFloat(document.getElementById('pexpenses').value)||0,
+    insurance: parseFloat(document.getElementById('pinsurance').value)||110,
+    tax_annual: parseFloat(document.getElementById('ptax').value)||0,
+    rehab_budget: parseFloat(document.getElementById('prehab').value)||0,
+    rehab_spent: parseFloat(document.getElementById('prehabspent').value)||0,
+    unit_rents: unitRents,
+  });
+  if (error) { showToast('Save failed: '+error.message, true); setSyncStatus('error','Error'); return; }
+  closeModal('addPropModal');
+  showToast('Property added ✓');
+  await loadAll();
+}
+
+function openAddPropModal() { openModal('addPropModal'); updatePropUnitFields(); }
+
+// ── EDIT PROPERTY
+function openEditPropModal(id) {
+  const p = properties.find(p => p.id === id);
+  if (!p) return;
+  document.getElementById('ep-id').value = p.id;
+  document.getElementById('ep-name').value = p.name;
+  document.getElementById('ep-address').value = p.address||'';
+  document.getElementById('ep-units').value = p.units||2;
+  document.getElementById('ep-status').value = p.status||'active';
+  document.getElementById('ep-purchase').value = p.purchase||'';
+  document.getElementById('ep-value').value = p.value||'';
+  document.getElementById('ep-mortgage').value = p.mortgage||'';
+  document.getElementById('ep-expenses').value = p.expenses||'';
+  document.getElementById('ep-insurance').value = p.insurance||110;
+  document.getElementById('ep-tax').value = p.tax_annual||'';
+  document.getElementById('ep-rehab').value = p.rehab_budget||'';
+  document.getElementById('ep-rehabspent').value = p.rehab_spent||'';
+  document.getElementById('editPropModal').classList.add('open');
+  updateEditPropUnitFields();
+  // Fill existing unit rents
+  setTimeout(() => {
+    const unitRents = p.unit_rents || {};
+    for (let u = 1; u <= (p.units||2); u++) {
+      const el = document.getElementById(`epunit${u}`);
+      if (el) el.value = unitRents[`unit${u}`]||'';
+    }
+  }, 50);
+}
+
+async function saveEditProperty() {
+  const id = document.getElementById('ep-id').value;
+  const units = parseInt(document.getElementById('ep-units').value)||2;
+  const unitRents = {};
+  let totalRent = 0;
+  for (let u = 1; u <= units; u++) {
+    const amt = parseFloat(document.getElementById(`epunit${u}`)?.value)||0;
+    unitRents[`unit${u}`] = amt;
+    totalRent += amt;
+  }
+  setSyncStatus('syncing', 'Saving...');
+  const { error } = await sb.from('properties').update({
+    name: document.getElementById('ep-name').value,
+    address: document.getElementById('ep-address').value,
+    units, status: document.getElementById('ep-status').value,
+    purchase: parseFloat(document.getElementById('ep-purchase').value)||0,
+    value: parseFloat(document.getElementById('ep-value').value)||0,
+    mortgage: parseFloat(document.getElementById('ep-mortgage').value)||0,
+    rent: totalRent,
+    expenses: parseFloat(document.getElementById('ep-expenses').value)||0,
+    insurance: parseFloat(document.getElementById('ep-insurance').value)||110,
+    tax_annual: parseFloat(document.getElementById('ep-tax').value)||0,
+    rehab_budget: parseFloat(document.getElementById('ep-rehab').value)||0,
+    rehab_spent: parseFloat(document.getElementById('ep-rehabspent').value)||0,
+    unit_rents: unitRents,
+  }).eq('id', id);
+  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editPropModal');
+  showToast('Property updated ✓');
+  await loadAll();
+}
+
+async function deleteProperty() {
+  const id = document.getElementById('ep-id').value;
+  if (!confirm('Delete this property? This cannot be undone.')) return;
+  setSyncStatus('syncing', 'Deleting...');
+  const { error } = await sb.from('properties').delete().eq('id', id);
+  if (error) { showToast('Delete failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editPropModal');
+  showToast('Property deleted');
+  await loadAll();
+}
+
+// ── EDIT TRANSACTION
+function openEditModal(id) {
+  const t = transactions.find(t => t.id === id);
+  if (!t) return;
+  editReceiptFile = null;
+  document.getElementById('edit-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
+    ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
+  document.getElementById('edit-id').value = t.id;
+  document.getElementById('edit-type').value = t.type;
+  document.getElementById('edit-prop').value = t.property;
+  document.getElementById('edit-amt').value = t.amount;
+  document.getElementById('edit-date').value = t.date;
+  document.getElementById('edit-desc').value = t.description||'';
+  toggleEditCats();
+  document.getElementById('edit-cat').value = t.category;
+  document.getElementById('edit-receipt-name').textContent = t.receipt_url ? '✓ Receipt attached' : 'No photo';
+  document.getElementById('edit-receipt-preview').style.display = 'none';
+  document.getElementById('editModal').classList.add('open');
+}
+function toggleEditCats() {
+  const t = document.getElementById('edit-type').value;
+  document.getElementById('edit-cat').innerHTML = t==='income'
+    ? '<option>Rent Payment</option><option>Other Income</option>'
+    : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
+}
+function previewEditReceipt(e) {
+  const file = e.target.files[0]; if (!file) return;
+  editReceiptFile = file;
+  document.getElementById('edit-receipt-name').textContent = file.name;
+  const preview = document.getElementById('edit-receipt-preview');
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+}
+async function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const amt = parseFloat(document.getElementById('edit-amt').value)||0;
+  if (!amt) { showToast('Enter an amount', true); return; }
+  setSyncStatus('syncing', 'Saving...');
+  let receiptUrl;
+  if (editReceiptFile) {
+    const path = `receipts/${Date.now()}.${editReceiptFile.name.split('.').pop()||'jpg'}`;
+    const { error: ue } = await sb.storage.from('receipts').upload(path, editReceiptFile, {contentType:editReceiptFile.type});
+    if (!ue) { const {data} = sb.storage.from('receipts').getPublicUrl(path); receiptUrl = data?.publicUrl; }
+  }
+  const updates = { type:document.getElementById('edit-type').value, property:document.getElementById('edit-prop').value, category:document.getElementById('edit-cat').value, amount:amt, date:document.getElementById('edit-date').value, description:document.getElementById('edit-desc').value };
+  if (receiptUrl) updates.receipt_url = receiptUrl;
+  const { error } = await sb.from('transactions').update(updates).eq('id', id);
+  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editModal');
+  showToast('Transaction updated ✓');
+  await loadAll();
+}
+async function deleteTransaction() {
+  const id = document.getElementById('edit-id').value;
+  if (!confirm('Delete this transaction?')) return;
+  setSyncStatus('syncing', 'Deleting...');
+  await sb.from('transactions').delete().eq('id', id);
+  closeModal('editModal'); showToast('Deleted'); await loadAll();
+}
+
+// ── EDIT HOURS
+function openEditHoursModal(id) {
+  const h = hours.find(h => h.id === id); if (!h) return;
+  document.getElementById('eh-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
+    ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
+  document.getElementById('eh-id').value = h.id;
+  document.getElementById('eh-prop').value = h.property;
+  document.getElementById('eh-cat').value = h.activity||'';
+  document.getElementById('eh-hrs').value = h.hrs||'';
+  document.getElementById('eh-date').value = h.date||'';
+  document.getElementById('eh-notes').value = h.notes||'';
+  document.getElementById('editHoursModal').classList.add('open');
+}
+async function saveEditHours() {
+  const id = document.getElementById('eh-id').value;
+  const hrs = parseFloat(document.getElementById('eh-hrs').value)||0;
+  if (!hrs) { showToast('Enter hours', true); return; }
+  setSyncStatus('syncing', 'Saving...');
+  const { error } = await sb.from('hours').update({ property:document.getElementById('eh-prop').value, activity:document.getElementById('eh-cat').value, hrs, date:document.getElementById('eh-date').value, notes:document.getElementById('eh-notes').value }).eq('id', id);
+  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editHoursModal'); showToast('Hours updated ✓'); await loadAll();
+}
+async function deleteHours() {
+  const id = document.getElementById('eh-id').value;
+  if (!confirm('Delete this time entry?')) return;
+  await sb.from('hours').delete().eq('id', id);
+  closeModal('editHoursModal'); showToast('Entry deleted'); await loadAll();
+}
+
+// ── EDIT DRIVE
 function openEditDriveModal(id) {
-  const d = drives.find(d => d.id === id);
-  if (!d) return;
+  const d = drives.find(d => d.id === id); if (!d) return;
   document.getElementById('ed-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
     ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
   document.getElementById('ed-id').value = d.id;
@@ -1067,337 +1431,355 @@ function openEditDriveModal(id) {
   document.getElementById('ed-notes').value = d.notes||'';
   document.getElementById('editDriveModal').classList.add('open');
 }
-
 async function saveEditDrive() {
   const id = document.getElementById('ed-id').value;
   const miles = parseFloat(document.getElementById('ed-miles').value)||0;
   if (!miles) { showToast('Enter miles', true); return; }
   setSyncStatus('syncing', 'Saving...');
-  const { error } = await sb.from('drives').update({
-    property: document.getElementById('ed-prop').value,
-    origin: document.getElementById('ed-from').value,
-    destination: document.getElementById('ed-to').value,
-    total_miles: miles,
-    deduction: miles * IRS_RATE,
-    date: document.getElementById('ed-date').value,
-    notes: document.getElementById('ed-notes').value,
-  }).eq('id', id);
+  const { error } = await sb.from('drives').update({ property:document.getElementById('ed-prop').value, origin:document.getElementById('ed-from').value, destination:document.getElementById('ed-to').value, total_miles:miles, deduction:miles*IRS_RATE, date:document.getElementById('ed-date').value, notes:document.getElementById('ed-notes').value }).eq('id', id);
   if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
-  closeModal('editDriveModal');
-  showToast('Drive updated ✓');
-  await loadAll();
+  closeModal('editDriveModal'); showToast('Drive updated ✓'); await loadAll();
 }
-
 async function deleteDrive() {
   const id = document.getElementById('ed-id').value;
   if (!confirm('Delete this drive entry?')) return;
-  setSyncStatus('syncing', 'Deleting...');
-  const { error } = await sb.from('drives').delete().eq('id', id);
-  if (error) { showToast('Delete failed', true); setSyncStatus('error','Error'); return; }
-  closeModal('editDriveModal');
-  showToast('Drive deleted');
-  await loadAll();
+  await sb.from('drives').delete().eq('id', id);
+  closeModal('editDriveModal'); showToast('Drive deleted'); await loadAll();
 }
 
-// ── EDIT HOURS ─────────────────────────────────────────────────────────────────
-function openEditHoursModal(id) {
-  const h = hours.find(h => h.id === id);
-  if (!h) return;
-  document.getElementById('eh-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
-    ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
-  document.getElementById('eh-id').value = h.id;
-  document.getElementById('eh-prop').value = h.property;
-  document.getElementById('eh-cat').value = h.activity||'';
-  document.getElementById('eh-hrs').value = h.hrs||'';
-  document.getElementById('eh-date').value = h.date||'';
-  document.getElementById('eh-notes').value = h.notes||'';
-  document.getElementById('editHoursModal').classList.add('open');
+// ── ATTACH RECEIPT
+function attachReceipt(id) { attachTargetId = id; document.getElementById('attach-file').click(); }
+async function handleAttachReceipt(e) {
+  const file = e.target.files[0]; if (!file||!attachTargetId) return;
+  setSyncStatus('syncing', 'Uploading...');
+  const path = `receipts/${Date.now()}.${file.name.split('.').pop()||'jpg'}`;
+  const { error: ue } = await sb.storage.from('receipts').upload(path, file, {contentType:file.type});
+  if (ue) { showToast('Upload failed', true); setSyncStatus('error','Error'); return; }
+  const {data} = sb.storage.from('receipts').getPublicUrl(path);
+  await sb.from('transactions').update({receipt_url:data?.publicUrl}).eq('id', attachTargetId);
+  document.getElementById('attach-file').value=''; attachTargetId=null;
+  showToast('Receipt attached ✓'); await loadAll();
 }
 
-async function saveEditHours() {
-  const id = document.getElementById('eh-id').value;
-  const hrs = parseFloat(document.getElementById('eh-hrs').value)||0;
-  if (!hrs) { showToast('Enter hours', true); return; }
-  setSyncStatus('syncing', 'Saving...');
-  const { error } = await sb.from('hours').update({
-    property: document.getElementById('eh-prop').value,
-    activity: document.getElementById('eh-cat').value,
-    hrs,
-    date: document.getElementById('eh-date').value,
-    notes: document.getElementById('eh-notes').value,
-  }).eq('id', id);
-  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
-  closeModal('editHoursModal');
-  showToast('Hours updated ✓');
-  await loadAll();
-}
-
-async function deleteHours() {
-  const id = document.getElementById('eh-id').value;
-  if (!confirm('Delete this time entry?')) return;
-  setSyncStatus('syncing', 'Deleting...');
-  const { error } = await sb.from('hours').delete().eq('id', id);
-  if (error) { showToast('Delete failed', true); setSyncStatus('error','Error'); return; }
-  closeModal('editHoursModal');
-  showToast('Entry deleted');
-  await loadAll();
-}
-
-// ── RECEIPT SCAN ───────────────────────────────────────────────────────────────
-let scanFile = null;
-
+// ── SCAN RECEIPT
 function openScanModal() {
-  scanFile = null;
-  document.getElementById('scan-s1').style.display = 'block';
-  document.getElementById('scan-s2').style.display = 'none';
-  document.getElementById('scan-confirm-btn').style.display = 'none';
-  document.getElementById('scan-analyzing').style.display = 'none';
-  document.getElementById('scan-img').style.display = 'none';
-  document.getElementById('scan-ph').style.display = 'flex';
-  document.getElementById('scan-file').value = '';
-  document.getElementById('sc-date').value = new Date().toISOString().split('T')[0];
-  // Populate property dropdown
+  scanFile=null;
+  document.getElementById('scan-s1').style.display='block';
+  document.getElementById('scan-s2').style.display='none';
+  document.getElementById('scan-confirm-btn').style.display='none';
+  document.getElementById('scan-analyzing').style.display='none';
+  document.getElementById('scan-img').style.display='none';
+  document.getElementById('scan-ph').style.display='flex';
+  document.getElementById('scan-file').value='';
+  document.getElementById('sc-date').value=today();
   document.getElementById('sc-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
     ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
   document.getElementById('scanModal').classList.add('open');
 }
-
-function closeScanModal() {
-  document.getElementById('scanModal').classList.remove('open');
-}
-
+function closeScanModal() { document.getElementById('scanModal').classList.remove('open'); }
 function toggleScanCats() {
   const t = document.getElementById('sc-type').value;
-  document.getElementById('sc-cat').innerHTML = t === 'income'
+  document.getElementById('sc-cat').innerHTML = t==='income'
     ? '<option>Rent Payment</option><option>Other Income</option>'
     : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
 }
-
 async function handleScanFile(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  scanFile = file;
-
-  // Show preview
+  const file = e.target.files[0]; if (!file) return;
+  scanFile=file;
   const url = URL.createObjectURL(file);
-  const img = document.getElementById('scan-img');
-  img.src = url;
-  img.style.display = 'block';
-  document.getElementById('scan-ph').style.display = 'none';
-  document.getElementById('scan-thumb').src = url;
-  document.getElementById('scan-analyzing').style.display = 'block';
-
-  // Read as base64 for AI
+  document.getElementById('scan-img').src=url; document.getElementById('scan-img').style.display='block';
+  document.getElementById('scan-ph').style.display='none';
+  document.getElementById('scan-thumb').src=url;
+  document.getElementById('scan-analyzing').style.display='block';
   const reader = new FileReader();
   reader.onload = async (ev) => {
     const b64 = ev.target.result.split(',')[1];
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 500,
-          messages: [{ role: 'user', content: [
-            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: b64 } },
-            { type: 'text', text: `Parse this receipt for a real estate investment tracker. Return ONLY valid JSON with no other text:\n{"amount":<number>,"date":"<YYYY-MM-DD>","vendor":"<string>","category":"<one of: Rehab,Contractor,Repairs & Maintenance,Insurance,Property Taxes,Utilities,Other>","description":"<string>"}\nUse null for any field you cannot determine.` }
-          ]}]
-        })
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:500,
+          messages:[{role:'user',content:[
+            {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
+            {type:'text',text:`Parse this receipt. Return ONLY valid JSON: {"amount":<number>,"date":"<YYYY-MM-DD>","vendor":"<string>","category":"<one of: Rehab,Contractor,Repairs & Maintenance,Insurance,Property Taxes,Utilities,Other>","description":"<string>"}`}
+          ]}]})
       });
       const data = await res.json();
-      const text = data.content?.map(c => c.text||'').join('').trim();
+      const text = data.content?.map(c=>c.text||'').join('').trim();
       let parsed = {};
       try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); } catch(_) {}
-
-      if (parsed.amount) document.getElementById('sc-amt').value = parsed.amount;
-      if (parsed.date) document.getElementById('sc-date').value = parsed.date;
-      if (parsed.vendor || parsed.description) document.getElementById('sc-desc').value = parsed.vendor || parsed.description;
-      if (parsed.category) {
-        const cats = ['Rehab','Contractor','Repairs & Maintenance','Insurance','Property Taxes','Mortgage Payment','LOC Interest','Utilities','Other'];
-        if (cats.includes(parsed.category)) document.getElementById('sc-cat').value = parsed.category;
-      }
-    } catch(_) {
-      showToast('Could not auto-read — fill in manually', true);
-    }
-    document.getElementById('scan-analyzing').style.display = 'none';
-    document.getElementById('scan-s2').style.display = 'block';
-    document.getElementById('scan-confirm-btn').style.display = 'block';
+      if (parsed.amount) document.getElementById('sc-amt').value=parsed.amount;
+      if (parsed.date) document.getElementById('sc-date').value=parsed.date;
+      if (parsed.vendor||parsed.description) document.getElementById('sc-desc').value=parsed.vendor||parsed.description;
+      if (parsed.category) { const el=document.getElementById('sc-cat'); [...el.options].forEach(o=>{if(o.value===parsed.category)el.value=o.value;}); }
+    } catch(_) { showToast('Could not auto-read — fill in manually', true); }
+    document.getElementById('scan-analyzing').style.display='none';
+    document.getElementById('scan-s2').style.display='block';
+    document.getElementById('scan-confirm-btn').style.display='block';
   };
   reader.readAsDataURL(file);
 }
-
 async function confirmScan() {
   const amt = parseFloat(document.getElementById('sc-amt').value)||0;
   if (!amt) { showToast('Enter an amount', true); return; }
-  setSyncStatus('syncing', 'Uploading receipt...');
-
-  let receiptUrl = null;
-
-  // Upload image to Supabase Storage
+  setSyncStatus('syncing', 'Uploading...');
+  let receiptUrl=null;
   if (scanFile) {
-    const ext = scanFile.name.split('.').pop() || 'jpg';
-    const path = `receipts/${Date.now()}.${ext}`;
-    const { data: uploadData, error: uploadError } = await sb.storage
-      .from('receipts')
-      .upload(path, scanFile, { contentType: scanFile.type, upsert: false });
-
-    if (!uploadError) {
-      const { data: urlData } = sb.storage.from('receipts').getPublicUrl(path);
-      receiptUrl = urlData?.publicUrl || null;
-    } else {
-      showToast('Image upload failed — saving without receipt', true);
-    }
+    const path=`receipts/${Date.now()}.${scanFile.name.split('.').pop()||'jpg'}`;
+    const {error:ue}=await sb.storage.from('receipts').upload(path,scanFile,{contentType:scanFile.type});
+    if (!ue) { const {data}=sb.storage.from('receipts').getPublicUrl(path); receiptUrl=data?.publicUrl; }
   }
-
-  // Save transaction
-  const { error } = await sb.from('transactions').insert({
-    type: document.getElementById('sc-type').value,
-    property: document.getElementById('sc-prop').value,
-    category: document.getElementById('sc-cat').value,
-    amount: amt,
-    date: document.getElementById('sc-date').value,
-    description: document.getElementById('sc-desc').value,
-    receipt_url: receiptUrl,
+  const {error}=await sb.from('transactions').insert({
+    type:document.getElementById('sc-type').value, property:document.getElementById('sc-prop').value,
+    category:document.getElementById('sc-cat').value, amount:amt,
+    date:document.getElementById('sc-date').value, description:document.getElementById('sc-desc').value, receipt_url:receiptUrl
   });
-
   if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
-  closeScanModal();
-  showToast('Receipt saved ✓');
-  await loadAll();
+  closeScanModal(); showToast('Receipt saved ✓'); await loadAll();
 }
 
-// ── EDIT TRANSACTION ──────────────────────────────────────────────────────────
-let editReceiptFile = null;
-let attachTargetId = null;
-
-function openEditModal(id) {
-  const t = transactions.find(t => t.id === id);
-  if (!t) return;
-  editReceiptFile = null;
-
-  // Populate property dropdown
-  document.getElementById('edit-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
-    ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
-
-  document.getElementById('edit-id').value = t.id;
-  document.getElementById('edit-type').value = t.type;
-  document.getElementById('edit-prop').value = t.property;
-  document.getElementById('edit-amt').value = t.amount;
-  document.getElementById('edit-date').value = t.date;
-  document.getElementById('edit-desc').value = t.description || '';
-
-  // Set category options and value
-  toggleEditCats();
-  document.getElementById('edit-cat').value = t.category;
-
-  // Reset receipt preview
-  document.getElementById('edit-receipt-name').textContent = t.receipt_url ? '✓ Receipt attached' : 'No photo selected';
-  document.getElementById('edit-receipt-preview').style.display = 'none';
-  document.getElementById('edit-receipt-file').value = '';
-
-  document.getElementById('editModal').classList.add('open');
+// ── NAV UPDATE
+async function updateNAV() {
+  navValue=parseFloat(document.getElementById('nav-input').value)||0;
+  setSyncStatus('syncing','Saving...');
+  await sb.from('settings').upsert({key:'nav',value:String(navValue)},{onConflict:'key'});
+  setSyncStatus('synced','Synced'); render(); showToast('Portfolio updated ✓');
 }
 
-function toggleEditCats() {
-  const t = document.getElementById('edit-type').value;
-  document.getElementById('edit-cat').innerHTML = t === 'income'
-    ? '<option>Rent Payment</option><option>Other Income</option>'
-    : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
+// ── EXPENSE CATEGORY TOGGLE
+function toggleExpCats() {
+  const t=document.getElementById('et').value;
+  document.getElementById('ecat').innerHTML=t==='income'
+    ?'<option>Rent Payment</option><option>Other Income</option>'
+    :'<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
 }
 
-function previewEditReceipt(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  editReceiptFile = file;
-  document.getElementById('edit-receipt-name').textContent = file.name;
-  const preview = document.getElementById('edit-receipt-preview');
-  preview.src = URL.createObjectURL(file);
-  preview.style.display = 'block';
-}
-
-async function saveEdit() {
-  const id = document.getElementById('edit-id').value;
-  const amt = parseFloat(document.getElementById('edit-amt').value)||0;
-  if (!amt) { showToast('Enter an amount', true); return; }
-  setSyncStatus('syncing', 'Saving...');
-
-  let receiptUrl = undefined; // undefined = don't change existing
-
-  // Upload new receipt if selected
-  if (editReceiptFile) {
-    const ext = editReceiptFile.name.split('.').pop() || 'jpg';
-    const path = `receipts/${Date.now()}.${ext}`;
-    const { data: uploadData, error: uploadError } = await sb.storage
-      .from('receipts')
-      .upload(path, editReceiptFile, { contentType: editReceiptFile.type });
-    if (!uploadError) {
-      const { data: urlData } = sb.storage.from('receipts').getPublicUrl(path);
-      receiptUrl = urlData?.publicUrl || null;
-    } else {
-      showToast('Image upload failed', true);
-    }
+// ── UNDERWRITER
+function updateUWUnits() {
+  const units=parseInt(document.getElementById('uw-units').value)||2;
+  const container=document.getElementById('uw-unit-rents');
+  let html='<div style="margin-bottom:0.3rem;"><label class="flbl">Rent Per Unit</label></div>';
+  for(let u=1;u<=units;u++){
+    html+=`<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;">
+      <label style="font-size:0.65rem;color:var(--muted);width:50px;flex-shrink:0;">Unit ${u}</label>
+      <input type="number" class="finput" id="uwunit${u}" placeholder="1050" oninput="calcUW()" style="flex:1;">
+    </div>`;
   }
+  container.innerHTML=html;
+  calcUW();
+}
 
-  const updates = {
-    type: document.getElementById('edit-type').value,
-    property: document.getElementById('edit-prop').value,
-    category: document.getElementById('edit-cat').value,
-    amount: amt,
-    date: document.getElementById('edit-date').value,
-    description: document.getElementById('edit-desc').value,
+async function lookupTax() {
+  const address=document.getElementById('uw-address').value;
+  if(!address) return;
+  document.getElementById('uw-tax-status').textContent='Looking up tax...';
+  try {
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`);
+    const data=await res.json();
+    if(data&&data[0]) {
+      document.getElementById('uw-tax-status').textContent='Address found. Enter tax manually or check county records.';
+    } else {
+      document.getElementById('uw-tax-status').textContent='Address not found. Enter tax amount manually.';
+    }
+  } catch(_) {
+    document.getElementById('uw-tax-status').textContent='Lookup unavailable. Enter tax manually.';
+  }
+  calcUW();
+}
+
+function calcUW() {
+  const price=parseFloat(document.getElementById('uw-price').value)||0;
+  const units=parseInt(document.getElementById('uw-units').value)||2;
+  const rehab=parseFloat(document.getElementById('uw-rehab').value)||0;
+  const downPct=(parseFloat(document.getElementById('uw-down').value)||25)/100;
+  const rate=(parseFloat(document.getElementById('uw-rate').value)||6.3)/100/12;
+  const insurance=parseFloat(document.getElementById('uw-insurance').value)||110;
+  const taxAnnual=parseFloat(document.getElementById('uw-taxes').value)||0;
+  const taxMonthly=taxAnnual/12;
+  const mgmtPct=(parseFloat(document.getElementById('uw-mgmt').value)||0)/100;
+  if(!price) return;
+
+  // Sum unit rents
+  let gross=0;
+  for(let u=1;u<=units;u++){
+    const el=document.getElementById(`uwunit${u}`);
+    gross+=parseFloat(el?.value||0);
+  }
+  if(!gross) return;
+
+  const basis=price+rehab;
+  const cash=price*downPct+rehab;
+  const loan=price*(1-downPct);
+  const n=360;
+  const mort=rate>0?loan*(rate*Math.pow(1+rate,n))/(Math.pow(1+rate,n)-1):loan/n;
+  const vacancy=gross*0.08;
+  const maint=gross*0.05;
+  const mgmt=gross*mgmtPct;
+  const noi=gross-vacancy-maint;
+  const netMo=gross-vacancy-mort-insurance-taxMonthly-maint-mgmt;
+  const netYr=netMo*12;
+  const capRate=(noi*12/basis)*100;
+  const coc=cash>0?(netYr/cash)*100:0;
+  const onePct=gross/basis*100;
+
+  document.getElementById('uw-breakdown').style.display='block';
+  document.getElementById('uw-results').style.display='grid';
+  document.getElementById('uw-verdict').style.display='block';
+
+  document.getElementById('uw-b-gross').textContent=fmt(gross);
+  document.getElementById('uw-b-vac').textContent='-'+fmt(vacancy);
+  document.getElementById('uw-b-mort').textContent='-'+fmt(mort);
+  document.getElementById('uw-b-ins').textContent='-'+fmt(insurance);
+  document.getElementById('uw-b-tax').textContent='-'+fmt(taxMonthly);
+  document.getElementById('uw-b-maint').textContent='-'+fmt(maint);
+  document.getElementById('uw-b-mgmt').textContent='-'+fmt(mgmt);
+  const netEl=document.getElementById('uw-b-net');
+  netEl.textContent=fmt(netMo); netEl.style.color=netMo>=0?'var(--green)':'var(--red)';
+
+  document.getElementById('uw-basis').textContent=fmt(basis);
+  document.getElementById('uw-cash').textContent=fmt(cash);
+  const nyEl=document.getElementById('uw-netyr');
+  nyEl.textContent=fmt(netYr); nyEl.style.color=netYr>=0?'var(--green)':'var(--red)';
+  const capEl=document.getElementById('uw-cap');
+  capEl.textContent=capRate.toFixed(1)+'%'; capEl.style.color=capRate>=10?'var(--green)':capRate>=8?'var(--accent)':'var(--red)';
+  const cocEl=document.getElementById('uw-coc');
+  cocEl.textContent=coc.toFixed(1)+'%'; cocEl.style.color=coc>=10?'var(--green)':coc>=8?'var(--accent)':'var(--red)';
+  const opEl=document.getElementById('uw-onepct');
+  opEl.style.color=onePct>=1?'var(--green)':'var(--red)';
+  opEl.textContent=onePct>=1?'✓ '+onePct.toFixed(2)+'%':'✗ '+onePct.toFixed(2)+'%';
+
+  const vEl=document.getElementById('uw-verdict');
+  let verdict,vColor;
+  if(capRate>=12&&coc>=10&&netMo>400&&onePct>=1){
+    verdict='🟢 Strong Deal — all Soda Rock criteria met. Cap '+capRate.toFixed(1)+'%, CoC '+coc.toFixed(1)+'%, +'+fmt(netMo)+'/mo. Pull the trigger if rehab is validated.';
+    vColor='var(--green)';
+  } else if(capRate>=9&&netMo>0){
+    verdict='🟡 Acceptable — decent but not exceptional. Cap '+capRate.toFixed(1)+'%. Negotiate price down or push rents higher.';
+    vColor='var(--accent)';
+  } else if(netMo<0){
+    verdict='🔴 Negative Cash Flow — loses money monthly at these numbers. Walk away or renegotiate.';
+    vColor='var(--red)';
+  } else {
+    verdict='🔴 Weak Deal — below Soda Rock thresholds. Cap '+capRate.toFixed(1)+'% too thin.';
+    vColor='var(--red)';
+  }
+  document.getElementById('uw-vtext').textContent=verdict;
+  vEl.style.borderLeftColor=vColor;
+}
+
+// ── EXPORT
+function csvFromArray(headers, rows) {
+  return [headers.join(','), ...rows.map(r => headers.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))].join('\n');
+}
+
+function downloadCSV(content, filename) {
+  const blob=new Blob([content],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  a.click();
+}
+
+function exportAll() {
+  const yr=new Date().getFullYear();
+  // Transactions
+  const tHeaders=['date','type','property','category','amount','description'];
+  downloadCSV(csvFromArray(tHeaders, transactions.map(t=>({date:t.date,type:t.type,property:t.property,category:t.category,amount:t.amount,description:t.description||''}))), `soda-rock-transactions-${yr}.csv`);
+  setTimeout(()=>{
+    // Hours
+    const hHeaders=['date','property','activity','hrs','notes'];
+    downloadCSV(csvFromArray(hHeaders, hours.map(h=>({date:h.date,property:h.property,activity:h.activity||'',hrs:h.hrs,notes:h.notes||''}))), `soda-rock-hours-${yr}.csv`);
+  },500);
+  setTimeout(()=>{
+    // Drives
+    const dHeaders=['date','property','origin','destination','total_miles','deduction','notes'];
+    downloadCSV(csvFromArray(dHeaders, drives.map(d=>({date:d.date,property:d.property,origin:d.origin||'',destination:d.destination||'',total_miles:d.total_miles||0,deduction:d.deduction||0,notes:d.notes||''}))), `soda-rock-drives-${yr}.csv`);
+  },1000);
+  showToast('Exporting 3 files...');
+}
+
+function exportSummary() {
+  const yr=new Date().getFullYear();
+  const yT=transactions.filter(t=>new Date(t.date).getFullYear()===yr);
+  const totalInc=yT.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const totalExp=yT.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const totalHrs=hours.filter(h=>new Date(h.date).getFullYear()===yr).reduce((s,h)=>s+h.hrs,0);
+  const totalMiles=drives.filter(d=>new Date(d.date).getFullYear()===yr).reduce((s,d)=>s+(d.total_miles||0),0);
+  const totalDed=totalMiles*IRS_RATE;
+
+  const propSummary=properties.map(p=>{
+    const pInc=yT.filter(t=>t.property===p.name&&t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const pExp=yT.filter(t=>t.property===p.name&&t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    return `${p.name}: Income $${pInc.toFixed(2)} | Expenses $${pExp.toFixed(2)} | Net $${(pInc-pExp).toFixed(2)}`;
+  }).join('\n');
+
+  const content=`SODA ROCK HOLDINGS — ${yr} ANNUAL SUMMARY\n${'='.repeat(50)}\n\nINCOME & EXPENSES\nTotal Income: $${totalInc.toFixed(2)}\nTotal Expenses: $${totalExp.toFixed(2)}\nNet: $${(totalInc-totalExp).toFixed(2)}\n\nPROPERTY BREAKDOWN\n${propSummary}\n\nQBI HOURS\nTotal Hours Logged: ${totalHrs.toFixed(1)} hrs\nSafe Harbor (250 hrs): ${totalHrs>=250?'MET':'NOT MET ('+((250-totalHrs).toFixed(1))+' hrs short)'}\n\nMILEAGE\nTotal Miles: ${totalMiles.toFixed(1)} mi\nIRS Deduction ($0.70/mile): $${totalDed.toFixed(2)}\n\nGenerated by Soda Rock Tracker`;
+  downloadCSV(content, `soda-rock-summary-${yr}.txt`);
+  showToast('Summary exported ✓');
+}
+
+// ── IMPORT
+function downloadTemplate() {
+  const type=document.getElementById('import-type').value;
+  const templates={
+    transactions:'date,type,property,category,amount,description\n2026-01-15,expense,Duplex Alpha,Rehab,250.00,Drywall materials\n2026-01-01,income,Duplex Alpha,Rent Payment,950.00,Unit 1 January rent',
+    hours:'date,property,activity,hrs,notes\n2026-01-15,Duplex Alpha,Rehab Labor,3,Painted living room\n2026-01-20,Duplex Alpha,Property Inspection,1,Quarterly walkthrough',
+    drives:'date,property,origin,destination,total_miles,notes\n2026-01-15,Duplex Alpha,Home,1261 E 167th St,17,Contractor meeting\n2026-01-20,Duplex Alpha,Home,Duplex Alpha,17,Inspection visit'
   };
-  if (receiptUrl !== undefined) updates.receipt_url = receiptUrl;
+  downloadCSV(templates[type], `soda-rock-${type}-template.csv`);
+  showToast('Template downloaded ✓');
+}
 
-  const { error } = await sb.from('transactions').update(updates).eq('id', id);
-  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
-  closeModal('editModal');
-  showToast('Transaction updated ✓');
+function handleImport(e) {
+  const file=e.target.files[0]; if(!file) return;
+  importType=document.getElementById('import-type').value;
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    const lines=ev.target.result.split('\n').filter(l=>l.trim());
+    const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
+    importData=lines.slice(1).map(line=>{
+      const vals=line.match(/(".*?"|[^,]+)/g)||[];
+      const obj={};
+      headers.forEach((h,i)=>{ obj[h]=(vals[i]||'').replace(/"/g,'').trim(); });
+      return obj;
+    }).filter(r=>Object.values(r).some(v=>v));
+
+    const preview=document.getElementById('import-preview');
+    const content=document.getElementById('import-preview-content');
+    preview.style.display='block';
+    content.innerHTML=`<div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem;">Found <strong style="color:var(--text);">${importData.length} records</strong> to import as ${importType}.</div>`
+      +importData.slice(0,5).map(r=>`<div style="font-size:0.65rem;padding:0.3rem 0;border-bottom:1px solid var(--border);color:var(--muted);">${Object.values(r).slice(0,4).join(' · ')}</div>`).join('')
+      +(importData.length>5?`<div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">...and ${importData.length-5} more</div>`:'');
+  };
+  reader.readAsText(file);
+  document.getElementById('import-file').value='';
+}
+
+function cancelImport() {
+  importData=[]; importType='';
+  document.getElementById('import-preview').style.display='none';
+}
+
+async function confirmImport() {
+  if(!importData.length) return;
+  setSyncStatus('syncing','Importing...');
+  let records=[];
+  if(importType==='transactions'){
+    records=importData.map(r=>({type:r.type||'expense',property:r.property||'General',category:r.category||'Other',amount:parseFloat(r.amount)||0,date:r.date||today(),description:r.description||''}));
+    await sb.from('transactions').insert(records);
+  } else if(importType==='hours'){
+    records=importData.map(r=>({property:r.property||'General',activity:r.activity||'Other Qualifying Activity',hrs:parseFloat(r.hrs)||0,date:r.date||today(),notes:r.notes||''}));
+    await sb.from('hours').insert(records);
+  } else if(importType==='drives'){
+    records=importData.map(r=>({property:r.property||'General',origin:r.origin||'',destination:r.destination||'',total_miles:parseFloat(r.total_miles)||0,deduction:(parseFloat(r.total_miles)||0)*IRS_RATE,date:r.date||today(),notes:r.notes||''}));
+    await sb.from('drives').insert(records);
+  }
+  cancelImport();
+  showToast(`Imported ${records.length} records ✓`);
   await loadAll();
 }
 
-async function deleteTransaction() {
-  const id = document.getElementById('edit-id').value;
-  if (!confirm('Delete this transaction? This cannot be undone.')) return;
-  setSyncStatus('syncing', 'Deleting...');
-  const { error } = await sb.from('transactions').delete().eq('id', id);
-  if (error) { showToast('Delete failed', true); setSyncStatus('error','Error'); return; }
-  closeModal('editModal');
-  showToast('Transaction deleted');
-  await loadAll();
-}
-
-// ── ATTACH RECEIPT TO EXISTING TRANSACTION ────────────────────────────────────
-function attachReceipt(id) {
-  attachTargetId = id;
-  document.getElementById('attach-file').click();
-}
-
-async function handleAttachReceipt(e) {
-  const file = e.target.files[0];
-  if (!file || !attachTargetId) return;
-  setSyncStatus('syncing', 'Uploading receipt...');
-
-  const ext = file.name.split('.').pop() || 'jpg';
-  const path = `receipts/${Date.now()}.${ext}`;
-  const { error: uploadError } = await sb.storage
-    .from('receipts')
-    .upload(path, file, { contentType: file.type });
-
-  if (uploadError) { showToast('Upload failed', true); setSyncStatus('error','Error'); return; }
-
-  const { data: urlData } = sb.storage.from('receipts').getPublicUrl(path);
-  const receiptUrl = urlData?.publicUrl;
-
-  const { error } = await sb.from('transactions').update({ receipt_url: receiptUrl }).eq('id', attachTargetId);
-  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
-
-  document.getElementById('attach-file').value = '';
-  attachTargetId = null;
-  showToast('Receipt attached ✓');
-  await loadAll();
-}
-
-// ── INIT ───────────────────────────────────────────────────────────────────────
+// ── INIT
+updateUWUnits();
 loadAll();
 </script>
 </body>
