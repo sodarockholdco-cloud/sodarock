@@ -130,6 +130,7 @@
     <button class="tab active" onclick="switchTab('overview',this)">Overview</button>
     <button class="tab" onclick="switchTab('expenses',this)">Expenses</button>
     <button class="tab" onclick="switchTab('hours',this)">Hours</button>
+    <button class="tab" onclick="switchTab('drives',this)">Mileage</button>
     <button class="tab" onclick="switchTab('properties',this)">Properties</button>
     <button class="tab" onclick="switchTab('underwrite',this)">Underwrite</button>
   </div>
@@ -206,6 +207,23 @@
   <div id="hrs-list"><div class="loading">⏳ Loading...</div></div>
 </div>
 
+<!-- DRIVES -->
+<div id="page-drives" class="page">
+  <span class="slabel" style="margin-top:0;">Mileage Log — IRS Rate $0.70/mile</span>
+  <div class="grid2" style="margin-bottom:0.5rem;">
+    <div class="card ab"><div class="clbl">Total Miles This Year</div><div class="cval gold" id="drv-miles">0</div><div class="csub">qualifying drives</div></div>
+    <div class="card gb"><div class="clbl">Total Deduction</div><div class="cval g" id="drv-deduction">$0</div><div class="csub">at $0.70/mile</div></div>
+    <div class="card"><div class="clbl">This Month</div><div class="cval gold" id="drv-month">0 mi</div></div>
+    <div class="card"><div class="clbl">Drives Logged</div><div class="cval" id="drv-count">0</div></div>
+  </div>
+  <div class="card full" style="margin-bottom:0.5rem;">
+    <div class="clbl">Annual CPA Summary</div>
+    <div style="font-size:0.7rem;line-height:1.9;margin-top:0.3rem;" id="drv-summary">No drives logged yet.</div>
+  </div>
+  <span class="slabel">Drive Log</span>
+  <div id="drv-list"><div class="loading">⏳ Loading...</div></div>
+</div>
+
 <!-- PROPERTIES -->
 <div id="page-properties" class="page">
   <div id="prop-list"><div class="loading">⏳ Loading...</div></div>
@@ -257,6 +275,7 @@
 <div class="fabs">
   <div class="fab-menu" id="fabMenu">
     <div class="fab-row"><span class="fab-label">Log Time</span><button class="fab-mini" onclick="closeFab();openModal('hoursModal')">⏱</button></div>
+    <div class="fab-row"><span class="fab-label">Log Drive</span><button class="fab-mini" onclick="closeFab();openModal('driveModal')">🚗</button></div>
     <div class="fab-row"><span class="fab-label">Scan Receipt</span><button class="fab-mini" onclick="closeFab();openScanModal()">📷</button></div>
     <div class="fab-row"><span class="fab-label">Manual Entry</span><button class="fab-mini" onclick="closeFab();openModal('expModal')">✏️</button></div>
   </div>
@@ -336,6 +355,90 @@
 
 <!-- ATTACH RECEIPT INPUT (hidden) -->
 <input type="file" id="attach-file" accept="image/*" style="display:none;" onchange="handleAttachReceipt(event)">
+
+<!-- DRIVE MODAL -->
+<div class="overlay" id="driveModal">
+  <div class="modal">
+    <div class="mtitle">Log <span>Drive</span></div>
+    <div class="frow"><label class="flbl">Property / Purpose</label><select class="fsel" id="drv-prop"></select></div>
+    <div class="frow2">
+      <div><label class="flbl">From</label><input type="text" class="finput" id="drv-from" placeholder="Home"></div>
+      <div><label class="flbl">To</label><input type="text" class="finput" id="drv-to" placeholder="1261 E 167th"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Miles (one way)</label><input type="number" class="finput" id="drv-miles-input" placeholder="8.5" step="0.1" oninput="calcDriveDeduction()"></div>
+      <div><label class="flbl">Date</label><input type="date" class="finput" id="drv-date"></div>
+    </div>
+    <div class="frow">
+      <label class="flbl">Round Trip?</label>
+      <div style="display:flex;gap:0.5rem;margin-top:0.2rem;">
+        <button id="rt-yes" onclick="setRoundTrip(true)" style="flex:1;padding:0.55rem;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:white;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;cursor:pointer;">Yes ×2</button>
+        <button id="rt-no" onclick="setRoundTrip(false)" style="flex:1;padding:0.55rem;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.7rem;cursor:pointer;">One Way</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0.7rem;background:var(--surface2);">
+      <div class="clbl">Calculated Deduction</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;color:var(--green);" id="drv-calc-deduction">$0.00</div>
+      <div style="font-size:0.6rem;color:var(--muted);margin-top:0.15rem;" id="drv-calc-miles">0 total miles × $0.70/mile</div>
+    </div>
+    <div class="frow"><label class="flbl">Notes</label><input type="text" class="finput" id="drv-notes" placeholder="e.g. Contractor meeting, inspection"></div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('driveModal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveDrive()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT HOURS MODAL -->
+<div class="overlay" id="editHoursModal">
+  <div class="modal">
+    <div class="mtitle">Edit <span>Time Entry</span></div>
+    <input type="hidden" id="eh-id">
+    <div class="frow"><label class="flbl">Property</label><select class="fsel" id="eh-prop"></select></div>
+    <div class="frow"><label class="flbl">Activity</label>
+      <select class="fsel" id="eh-cat">
+        <option>Advertising & Showing</option><option>Tenant Screening & Leasing</option>
+        <option>Rent Collection</option><option>Property Inspection</option>
+        <option>Repairs & Maintenance</option><option>Contractor Supervision</option>
+        <option>Rehab Labor</option><option>Travel to Property</option>
+        <option>Bookkeeping & Admin</option><option>Other Qualifying Activity</option>
+      </select>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Hours</label><input type="number" class="finput" id="eh-hrs" step="0.25"></div>
+      <div><label class="flbl">Date</label><input type="date" class="finput" id="eh-date"></div>
+    </div>
+    <div class="frow"><label class="flbl">Notes</label><input type="text" class="finput" id="eh-notes"></div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('editHoursModal')">Cancel</button>
+      <button class="btn" style="flex:0;padding:0.7rem 0.8rem;background:var(--red);color:white;font-size:0.65rem;border-radius:7px;" onclick="deleteHours()">Delete</button>
+      <button class="btn btn-p" onclick="saveEditHours()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT DRIVE MODAL -->
+<div class="overlay" id="editDriveModal">
+  <div class="modal">
+    <div class="mtitle">Edit <span>Drive</span></div>
+    <input type="hidden" id="ed-id">
+    <div class="frow"><label class="flbl">Property / Purpose</label><select class="fsel" id="ed-prop"></select></div>
+    <div class="frow2">
+      <div><label class="flbl">From</label><input type="text" class="finput" id="ed-from"></div>
+      <div><label class="flbl">To</label><input type="text" class="finput" id="ed-to"></div>
+    </div>
+    <div class="frow2">
+      <div><label class="flbl">Total Miles</label><input type="number" class="finput" id="ed-miles" step="0.1"></div>
+      <div><label class="flbl">Date</label><input type="date" class="finput" id="ed-date"></div>
+    </div>
+    <div class="frow"><label class="flbl">Notes</label><input type="text" class="finput" id="ed-notes"></div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('editDriveModal')">Cancel</button>
+      <button class="btn" style="flex:0;padding:0.7rem 0.8rem;background:var(--red);color:white;font-size:0.65rem;border-radius:7px;" onclick="deleteDrive()">Delete</button>
+      <button class="btn btn-p" onclick="saveEditDrive()">Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- SCAN MODAL -->
 <div class="overlay" id="scanModal">
@@ -464,6 +567,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let properties = [];
 let transactions = [];
 let hours = [];
+let drives = [];
 let navValue = 400000;
 
 // ── SYNC STATUS ────────────────────────────────────────────────────────────────
@@ -501,7 +605,7 @@ function switchTab(name, el) {
 // ── MODALS ─────────────────────────────────────────────────────────────────────
 function openModal(id) {
   // Populate property dropdowns
-  const propSelects = ['eprop','hprop'];
+  const propSelects = ['eprop','hprop','drv-prop'];
   propSelects.forEach(sid => {
     const sel = document.getElementById(sid);
     if (sel) {
@@ -510,10 +614,12 @@ function openModal(id) {
     }
   });
   // Set today's date
-  ['edate','hdate'].forEach(did => {
+  ['edate','hdate','drv-date'].forEach(did => {
     const el = document.getElementById(did);
     if (el && !el.value) el.value = new Date().toISOString().split('T')[0];
   });
+  // Reset round trip toggle when opening drive modal
+  if (id === 'driveModal') { setRoundTrip(true); calcDriveDeduction(); }
   document.getElementById(id).classList.add('open');
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -534,7 +640,7 @@ function closeFab() {
 }
 
 // ── RENDER ─────────────────────────────────────────────────────────────────────
-function render() { renderOverview(); renderExpenses(); renderHours(); renderProperties(); }
+function render() { renderOverview(); renderExpenses(); renderHours(); renderDrives(); renderProperties(); }
 
 function renderOverview() {
   const now = new Date();
@@ -643,11 +749,14 @@ function renderHours() {
   listEl.innerHTML = [...hours].reverse().map(h => `
     <div class="exp-item">
       <div style="width:34px;height:34px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">⏱</div>
-      <div style="flex:1;">
-        <div class="exp-desc">${h.notes||h.category}</div>
-        <div class="exp-meta">${h.property} · ${h.category} · ${h.date}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="exp-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${h.notes||h.activity||''}</div>
+        <div class="exp-meta">${h.property} · ${h.activity||''} · ${h.date}</div>
       </div>
-      <div style="font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:600;color:var(--accent);">${h.hrs}h</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0;">
+        <div style="font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:600;color:var(--accent);">${h.hrs}h</div>
+        <button onclick="openEditHoursModal('${h.id}')" style="font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;">Edit</button>
+      </div>
     </div>`).join('');
 }
 
@@ -685,15 +794,17 @@ function renderProperties() {
 async function loadAll() {
   setSyncStatus('syncing', 'Syncing...');
   try {
-    const [pRes, tRes, hRes, sRes] = await Promise.all([
+    const [pRes, tRes, hRes, sRes, dRes] = await Promise.all([
       sb.from('properties').select('*').order('created_at'),
       sb.from('transactions').select('*').order('created_at', {ascending:false}),
       sb.from('hours').select('*').order('created_at', {ascending:false}),
       sb.from('settings').select('*'),
+      sb.from('drives').select('*').order('created_at', {ascending:false}),
     ]);
     properties = pRes.data || [];
     transactions = tRes.data || [];
     hours = hRes.data || [];
+    drives = dRes.data || [];
     const navSetting = (sRes.data||[]).find(s => s.key==='nav');
     if (navSetting) { navValue = parseFloat(navSetting.value)||400000; document.getElementById('nav-input').value = navValue; }
     setSyncStatus('synced', 'Synced');
@@ -730,12 +841,12 @@ async function saveHours() {
   setSyncStatus('syncing', 'Saving...');
   const { error } = await sb.from('hours').insert({
     property: document.getElementById('hprop').value,
-    category: document.getElementById('hcat').value,
+    activity: document.getElementById('hcat').value,
     hrs,
     date: document.getElementById('hdate').value,
     notes: document.getElementById('hnotes').value,
   });
-  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+  if (error) { showToast('Save failed: '+error.message, true); setSyncStatus('error','Error'); return; }
   closeModal('hoursModal');
   document.getElementById('hhrs').value='';
   document.getElementById('hnotes').value='';
@@ -850,6 +961,186 @@ function calcUW() {
   }
   vtEl.textContent=verdict;
   vEl.style.borderLeftColor=vColor;
+}
+
+// ── DRIVES ─────────────────────────────────────────────────────────────────────
+const IRS_RATE = 0.70;
+let roundTrip = true;
+
+function setRoundTrip(val) {
+  roundTrip = val;
+  document.getElementById('rt-yes').style.background = val ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('rt-yes').style.color = val ? 'white' : 'var(--muted)';
+  document.getElementById('rt-yes').style.borderColor = val ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('rt-no').style.background = !val ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('rt-no').style.color = !val ? 'white' : 'var(--muted)';
+  document.getElementById('rt-no').style.borderColor = !val ? 'var(--accent)' : 'var(--border)';
+  calcDriveDeduction();
+}
+
+function calcDriveDeduction() {
+  const oneway = parseFloat(document.getElementById('drv-miles-input').value)||0;
+  const total = roundTrip ? oneway * 2 : oneway;
+  const ded = total * IRS_RATE;
+  document.getElementById('drv-calc-deduction').textContent = '$' + ded.toFixed(2);
+  document.getElementById('drv-calc-miles').textContent = total.toFixed(1) + ' total miles × $0.70/mile';
+}
+
+function renderDrives() {
+  const now = new Date();
+  const yr = now.getFullYear();
+  const mo = now.getMonth();
+  const yDrives = drives.filter(d => new Date(d.date).getFullYear() === yr);
+  const mDrives = drives.filter(d => { const dt=new Date(d.date); return dt.getFullYear()===yr&&dt.getMonth()===mo; });
+  const totalMiles = yDrives.reduce((s,d) => s+(d.total_miles||0), 0);
+  const totalDed = yDrives.reduce((s,d) => s+(d.deduction||0), 0);
+  const monthMiles = mDrives.reduce((s,d) => s+(d.total_miles||0), 0);
+
+  document.getElementById('drv-miles').textContent = totalMiles.toFixed(1);
+  document.getElementById('drv-deduction').textContent = '$' + totalDed.toFixed(2);
+  document.getElementById('drv-month').textContent = monthMiles.toFixed(1) + ' mi';
+  document.getElementById('drv-count').textContent = drives.length;
+
+  // CPA summary
+  const summEl = document.getElementById('drv-summary');
+  if (yDrives.length) {
+    const byProp = {};
+    yDrives.forEach(d => { byProp[d.property]=(byProp[d.property]||0)+(d.total_miles||0); });
+    summEl.innerHTML = `<strong>${yr} Summary:</strong> ${totalMiles.toFixed(1)} total miles · $${totalDed.toFixed(2)} deduction at $0.70/mile<br>` +
+      Object.entries(byProp).map(([p,m]) => `${p}: ${m.toFixed(1)} mi ($${(m*IRS_RATE).toFixed(2)})`).join(' · ');
+  } else {
+    summEl.textContent = 'No drives logged yet.';
+  }
+
+  const listEl = document.getElementById('drv-list');
+  if (!drives.length) { listEl.innerHTML = '<div class="empty">No drives logged yet.<br>Tap + to log a drive.</div>'; return; }
+  listEl.innerHTML = drives.map(d => `
+    <div class="exp-item">
+      <div style="width:34px;height:34px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;">🚗</div>
+      <div style="flex:1;min-width:0;">
+        <div class="exp-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.origin||''} → ${d.destination||''}</div>
+        <div class="exp-meta">${d.property} · ${d.total_miles} mi · ${d.date}${d.notes?' · '+d.notes:''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0;">
+        <div style="font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:600;color:var(--green);">$${(d.deduction||0).toFixed(2)}</div>
+        <button onclick="openEditDriveModal('${d.id}')" style="font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;">Edit</button>
+      </div>
+    </div>`).join('');
+}
+
+async function saveDrive() {
+  const oneway = parseFloat(document.getElementById('drv-miles-input').value)||0;
+  if (!oneway) { showToast('Enter miles', true); return; }
+  const total = roundTrip ? oneway * 2 : oneway;
+  const deduction = total * IRS_RATE;
+  setSyncStatus('syncing', 'Saving...');
+  const { error } = await sb.from('drives').insert({
+    property: document.getElementById('drv-prop').value,
+    origin: document.getElementById('drv-from').value,
+    destination: document.getElementById('drv-to').value,
+    miles: oneway,
+    round_trip: roundTrip,
+    total_miles: total,
+    deduction,
+    date: document.getElementById('drv-date').value,
+    notes: document.getElementById('drv-notes').value,
+  });
+  if (error) { showToast('Save failed: '+error.message, true); setSyncStatus('error','Error'); return; }
+  closeModal('driveModal');
+  document.getElementById('drv-miles-input').value='';
+  document.getElementById('drv-notes').value='';
+  showToast('Drive logged ✓');
+  await loadAll();
+}
+
+function openEditDriveModal(id) {
+  const d = drives.find(d => d.id === id);
+  if (!d) return;
+  document.getElementById('ed-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
+    ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
+  document.getElementById('ed-id').value = d.id;
+  document.getElementById('ed-prop').value = d.property;
+  document.getElementById('ed-from').value = d.origin||'';
+  document.getElementById('ed-to').value = d.destination||'';
+  document.getElementById('ed-miles').value = d.total_miles||'';
+  document.getElementById('ed-date').value = d.date||'';
+  document.getElementById('ed-notes').value = d.notes||'';
+  document.getElementById('editDriveModal').classList.add('open');
+}
+
+async function saveEditDrive() {
+  const id = document.getElementById('ed-id').value;
+  const miles = parseFloat(document.getElementById('ed-miles').value)||0;
+  if (!miles) { showToast('Enter miles', true); return; }
+  setSyncStatus('syncing', 'Saving...');
+  const { error } = await sb.from('drives').update({
+    property: document.getElementById('ed-prop').value,
+    origin: document.getElementById('ed-from').value,
+    destination: document.getElementById('ed-to').value,
+    total_miles: miles,
+    deduction: miles * IRS_RATE,
+    date: document.getElementById('ed-date').value,
+    notes: document.getElementById('ed-notes').value,
+  }).eq('id', id);
+  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editDriveModal');
+  showToast('Drive updated ✓');
+  await loadAll();
+}
+
+async function deleteDrive() {
+  const id = document.getElementById('ed-id').value;
+  if (!confirm('Delete this drive entry?')) return;
+  setSyncStatus('syncing', 'Deleting...');
+  const { error } = await sb.from('drives').delete().eq('id', id);
+  if (error) { showToast('Delete failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editDriveModal');
+  showToast('Drive deleted');
+  await loadAll();
+}
+
+// ── EDIT HOURS ─────────────────────────────────────────────────────────────────
+function openEditHoursModal(id) {
+  const h = hours.find(h => h.id === id);
+  if (!h) return;
+  document.getElementById('eh-prop').innerHTML = ['<option value="General">General / Portfolio</option>',
+    ...properties.map(p => `<option value="${p.name}">${p.name}</option>`)].join('');
+  document.getElementById('eh-id').value = h.id;
+  document.getElementById('eh-prop').value = h.property;
+  document.getElementById('eh-cat').value = h.activity||'';
+  document.getElementById('eh-hrs').value = h.hrs||'';
+  document.getElementById('eh-date').value = h.date||'';
+  document.getElementById('eh-notes').value = h.notes||'';
+  document.getElementById('editHoursModal').classList.add('open');
+}
+
+async function saveEditHours() {
+  const id = document.getElementById('eh-id').value;
+  const hrs = parseFloat(document.getElementById('eh-hrs').value)||0;
+  if (!hrs) { showToast('Enter hours', true); return; }
+  setSyncStatus('syncing', 'Saving...');
+  const { error } = await sb.from('hours').update({
+    property: document.getElementById('eh-prop').value,
+    activity: document.getElementById('eh-cat').value,
+    hrs,
+    date: document.getElementById('eh-date').value,
+    notes: document.getElementById('eh-notes').value,
+  }).eq('id', id);
+  if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editHoursModal');
+  showToast('Hours updated ✓');
+  await loadAll();
+}
+
+async function deleteHours() {
+  const id = document.getElementById('eh-id').value;
+  if (!confirm('Delete this time entry?')) return;
+  setSyncStatus('syncing', 'Deleting...');
+  const { error } = await sb.from('hours').delete().eq('id', id);
+  if (error) { showToast('Delete failed', true); setSyncStatus('error','Error'); return; }
+  closeModal('editHoursModal');
+  showToast('Entry deleted');
+  await loadAll();
 }
 
 // ── RECEIPT SCAN ───────────────────────────────────────────────────────────────
