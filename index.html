@@ -154,6 +154,8 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
 <div id="page-overview" class="page active">
   <!-- Rent confirmation banner -->
   <div id="rent-banner-container"></div>
+  <!-- Expense confirmation banner -->
+  <div id="expense-banner-container"></div>
 
   <span class="slabel">Freedom Target — $125k Free Cash Flow</span>
   <div class="card full ab" style="margin-bottom:0.5rem;">
@@ -361,7 +363,7 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
       <select class="fsel" id="ecat">
         <option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option>
         <option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option>
-        <option>LOC Interest</option><option>Utilities</option><option>Other</option>
+        <option>LOC Interest</option><option>Utilities</option><option>Supplies</option><option>Other</option>
       </select>
     </div>
     <div class="frow2">
@@ -459,12 +461,13 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
     </div>
     <div class="frow2">
       <div><label class="flbl">Mortgage Balance ($)</label><input type="number" class="finput" id="pmortgage"></div>
-      <div><label class="flbl">Monthly Expenses ($)</label><input type="number" class="finput" id="pexpenses"></div>
+      <div><label class="flbl">Monthly Mortgage P&I ($)</label><input type="number" class="finput" id="pmortgage_payment" placeholder="708.21"></div>
     </div>
     <div class="frow2">
       <div><label class="flbl">Insurance / Mo ($)</label><input type="number" class="finput" id="pinsurance" value="110"></div>
       <div><label class="flbl">Annual Taxes ($)</label><input type="number" class="finput" id="ptax"></div>
     </div>
+    <div class="frow"><label class="flbl">Other Monthly Expenses ($)</label><input type="number" class="finput" id="pexpenses" placeholder="utilities, supplies, misc"></div>
     <div class="frow2">
       <div><label class="flbl">Rehab Budget ($)</label><input type="number" class="finput" id="prehab"></div>
       <div><label class="flbl">Rehab Spent ($)</label><input type="number" class="finput" id="prehabspent" value="0"></div>
@@ -500,12 +503,13 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
     </div>
     <div class="frow2">
       <div><label class="flbl">Mortgage Balance ($)</label><input type="number" class="finput" id="ep-mortgage"></div>
-      <div><label class="flbl">Monthly Expenses ($)</label><input type="number" class="finput" id="ep-expenses"></div>
+      <div><label class="flbl">Monthly Mortgage P&I ($)</label><input type="number" class="finput" id="ep-mortgage_payment" placeholder="708.21"></div>
     </div>
     <div class="frow2">
       <div><label class="flbl">Insurance / Mo ($)</label><input type="number" class="finput" id="ep-insurance"></div>
       <div><label class="flbl">Annual Taxes ($)</label><input type="number" class="finput" id="ep-tax"></div>
     </div>
+    <div class="frow"><label class="flbl">Other Monthly Expenses ($)</label><input type="number" class="finput" id="ep-expenses" placeholder="utilities, supplies, misc"></div>
     <div class="frow2">
       <div><label class="flbl">Rehab Budget ($)</label><input type="number" class="finput" id="ep-rehab"></div>
       <div><label class="flbl">Rehab Spent ($)</label><input type="number" class="finput" id="ep-rehabspent"></div>
@@ -534,7 +538,7 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
       <select class="fsel" id="edit-cat">
         <option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option>
         <option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option>
-        <option>LOC Interest</option><option>Utilities</option><option>Other</option>
+        <option>LOC Interest</option><option>Utilities</option><option>Supplies</option><option>Other</option>
       </select>
     </div>
     <div class="frow2">
@@ -638,7 +642,7 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
         <select class="fsel" id="sc-cat">
           <option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option>
           <option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option>
-          <option>LOC Interest</option><option>Utilities</option><option>Other</option>
+          <option>LOC Interest</option><option>Utilities</option><option>Supplies</option><option>Other</option>
         </select>
       </div>
       <div class="frow2">
@@ -677,7 +681,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const IRS_RATE = 0.70;
 
 // ── STATE
-let properties = [], transactions = [], hours = [], drives = [], rentConfirmations = [], navValue = 400000;
+let properties = [], transactions = [], hours = [], drives = [], rentConfirmations = [], expenseConfirmations = [], navValue = 400000;
 let roundTrip = true, scanFile = null, editReceiptFile = null, attachTargetId = null;
 let importData = [], importType = '';
 
@@ -746,7 +750,116 @@ function closeFab() {
 }
 
 // ── RENDER ALL
-function render() { renderOverview(); renderExpenses(); renderHours(); renderDrives(); renderProperties(); renderRentBanner(); }
+function render() { renderOverview(); renderExpenses(); renderHours(); renderDrives(); renderProperties(); renderRentBanner(); renderExpenseBanner(); }
+
+// ── EXPENSE BANNER (1st of month)
+function renderExpenseBanner() {
+  const now = new Date();
+  const day = now.getDate();
+  const yr = now.getFullYear();
+  const mo = now.getMonth();
+  const monthKey = `${yr}-${String(mo+1).padStart(2,'0')}`;
+  const monthName = now.toLocaleString('default',{month:'long'});
+
+  // Only show on 1st of month
+  const container = document.getElementById('expense-banner-container');
+  if (!container) return;
+
+  const activeProps = properties.filter(p => p.status==='active' && (p.mortgage_payment||p.insurance||p.tax_annual));
+  if (!activeProps.length) { container.innerHTML=''; return; }
+
+  const needsConfirm = activeProps.filter(p => {
+    const confs = expenseConfirmations.filter(e=>e.property_id===p.id&&e.month===monthKey);
+    return !confs.find(e=>e.expense_type==='mortgage') || !confs.find(e=>e.expense_type==='insurance') || !confs.find(e=>e.expense_type==='tax');
+  });
+
+  if (!needsConfirm.length) { container.innerHTML=''; return; }
+
+  container.innerHTML = `
+    <div class="rent-banner" style="border-color:var(--red);">
+      <div class="rent-banner-title" style="color:var(--red);">💳 ${monthName} Fixed Expenses — Confirm Payment</div>
+      ${needsConfirm.map(p => {
+        const confs = expenseConfirmations.filter(e=>e.property_id===p.id&&e.month===monthKey);
+        const mortConf = confs.find(e=>e.expense_type==='mortgage');
+        const insConf = confs.find(e=>e.expense_type==='insurance');
+        const taxConf = confs.find(e=>e.expense_type==='tax');
+        const taxMo = (p.tax_annual||0)/12;
+
+        return `<div style="font-size:0.7rem;font-weight:600;margin:0.5rem 0 0.3rem;">${p.name}</div>
+          ${!mortConf&&p.mortgage_payment?`<div class="unit-confirm-row">
+            <span>Mortgage P&I — ${fmt(p.mortgage_payment)}</span>
+            <div class="unit-btn-group">
+              <button class="unit-btn" onclick="confirmExpense('${p.id}','${p.name}','mortgage',${p.mortgage_payment},'${monthKey}')">✓ Paid</button>
+              <button class="unit-btn" onclick="editConfirmExpense('${p.id}','${p.name}','mortgage',${p.mortgage_payment},'${monthKey}')">Edit</button>
+            </div>
+          </div>`:mortConf?`<div class="unit-confirm-row"><span>Mortgage P&I</span><span style="color:var(--green);font-size:0.65rem;">✓ ${fmt(mortConf.amount)} paid</span></div>`:''}
+          ${!insConf&&p.insurance?`<div class="unit-confirm-row">
+            <span>Insurance — ${fmt(p.insurance)}</span>
+            <div class="unit-btn-group">
+              <button class="unit-btn" onclick="confirmExpense('${p.id}','${p.name}','insurance',${p.insurance},'${monthKey}')">✓ Paid</button>
+              <button class="unit-btn" onclick="editConfirmExpense('${p.id}','${p.name}','insurance',${p.insurance},'${monthKey}')">Edit</button>
+            </div>
+          </div>`:insConf?`<div class="unit-confirm-row"><span>Insurance</span><span style="color:var(--green);font-size:0.65rem;">✓ ${fmt(insConf.amount)} paid</span></div>`:''}
+          ${!taxConf&&taxMo>0?`<div class="unit-confirm-row">
+            <span>Property Taxes — ${fmt(taxMo)}</span>
+            <div class="unit-btn-group">
+              <button class="unit-btn" onclick="confirmExpense('${p.id}','${p.name}','tax',${taxMo},'${monthKey}')">✓ Paid</button>
+              <button class="unit-btn" onclick="editConfirmExpense('${p.id}','${p.name}','tax',${taxMo},'${monthKey}')">Edit</button>
+            </div>
+          </div>`:taxConf?`<div class="unit-confirm-row"><span>Property Taxes</span><span style="color:var(--green);font-size:0.65rem;">✓ ${fmt(taxConf.amount)} paid</span></div>`:''}`;
+      }).join('')}
+    </div>`;
+}
+
+async function confirmExpense(propId, propName, expType, defaultAmt, monthKey) {
+  setSyncStatus('syncing', 'Saving...');
+  const catMap = {mortgage:'Mortgage Payment', insurance:'Insurance', tax:'Property Taxes'};
+  const [confRes, txRes] = await Promise.all([
+    sb.from('expense_confirmations').insert({
+      property_id: propId, property_name: propName,
+      expense_type: expType, month: monthKey,
+      year: new Date().getFullYear(), amount: defaultAmt,
+      confirmed_at: new Date().toISOString(),
+    }),
+    sb.from('transactions').insert({
+      type:'expense', property:propName,
+      category:catMap[expType]||expType,
+      amount:defaultAmt, date:today(),
+      description:`${catMap[expType]||expType} — ${monthKey}`,
+    }),
+  ]);
+  if (confRes.error) { showToast('Save failed: '+confRes.error.message, true); setSyncStatus('error','Error'); return; }
+  showToast('Expense confirmed ✓');
+  await loadAll();
+}
+
+async function editConfirmExpense(propId, propName, expType, defaultAmt, monthKey) {
+  const input = prompt(`Enter actual amount paid for ${expType}:`, defaultAmt);
+  if (!input) return;
+  const amt = parseFloat(input)||defaultAmt;
+  await confirmExpenseWithAmount(propId, propName, expType, amt, monthKey);
+}
+
+async function confirmExpenseWithAmount(propId, propName, expType, amt, monthKey) {
+  setSyncStatus('syncing', 'Saving...');
+  const catMap = {mortgage:'Mortgage Payment', insurance:'Insurance', tax:'Property Taxes'};
+  await Promise.all([
+    sb.from('expense_confirmations').insert({
+      property_id:propId, property_name:propName,
+      expense_type:expType, month:monthKey,
+      year:new Date().getFullYear(), amount:amt,
+      confirmed_at:new Date().toISOString(),
+    }),
+    sb.from('transactions').insert({
+      type:'expense', property:propName,
+      category:catMap[expType]||expType,
+      amount:amt, date:today(),
+      description:`${catMap[expType]||expType} — ${monthKey}`,
+    }),
+  ]);
+  showToast('Expense confirmed ✓');
+  await loadAll();
+}
 
 // ── OVERVIEW
 function renderOverview() {
@@ -1015,6 +1128,7 @@ function renderProperties() {
   if (!properties.length) { el.innerHTML = '<div class="empty">No properties yet.<br>Add your first below.</div>'; return; }
   const now = new Date();
   const yr = now.getFullYear(), mo = now.getMonth();
+  const monthKey = `${yr}-${String(mo+1).padStart(2,'0')}`;
   const statusLabel = {active:'Cash Flowing', rehab:'Rehab', pending:'Pending'};
   const statusColor = {active:'var(--green)', rehab:'var(--accent)', pending:'var(--blue)'};
 
@@ -1023,18 +1137,33 @@ function renderProperties() {
     const unitRents = p.unit_rents || {};
     const insurance = p.insurance || 110;
     const taxMonthly = (p.tax_annual||0)/12;
-    const totalExp = (p.expenses||0) + insurance + taxMonthly;
-    const nm = totalRent - totalExp;
+    const mortgagePayment = p.mortgage_payment || 0;
+
+    // Fixed costs
+    const fixedTotal = mortgagePayment + insurance + taxMonthly;
+
+    // Variable costs from logged transactions this month
+    const mthTrans = transactions.filter(t => {
+      const d=new Date(t.date);
+      return t.property===p.name && t.type==='expense' && d.getFullYear()===yr && d.getMonth()===mo;
+    });
+    const mthUtilities = mthTrans.filter(t=>t.category==='Utilities').reduce((s,t)=>s+t.amount,0);
+    const mthSupplies = mthTrans.filter(t=>t.category==='Supplies').reduce((s,t)=>s+t.amount,0);
+    const mthOther = mthTrans.filter(t=>!['Utilities','Supplies','Mortgage Payment','Insurance','Property Taxes'].includes(t.category)).reduce((s,t)=>s+t.amount,0);
+    const variableTotal = mthUtilities + mthSupplies + mthOther;
+
+    const nm = totalRent - fixedTotal - variableTotal;
     const na = nm * 12;
     const eq = (p.value||0)-(p.mortgage||0);
 
-    // This month expenses from log
-    const mthExp = transactions
-      .filter(t => { const d=new Date(t.date); return t.property===p.name&&t.type==='expense'&&d.getFullYear()===yr&&d.getMonth()===mo; })
-      .reduce((s,t) => s+(t.amount||0), 0);
-    const ytdExp = transactions
-      .filter(t => { return t.property===p.name&&t.type==='expense'&&new Date(t.date).getFullYear()===yr; })
-      .reduce((s,t) => s+(t.amount||0), 0);
+    // YTD from log
+    const ytdExp = transactions.filter(t=>t.property===p.name&&t.type==='expense'&&new Date(t.date).getFullYear()===yr).reduce((s,t)=>s+t.amount,0);
+
+    // Expense confirmation status this month
+    const expConfs = expenseConfirmations.filter(e=>e.property_id===p.id&&e.month===monthKey);
+    const mortConf = expConfs.find(e=>e.expense_type==='mortgage');
+    const insConf = expConfs.find(e=>e.expense_type==='insurance');
+    const taxConf = expConfs.find(e=>e.expense_type==='tax');
 
     // Payment history dots — last 6 months
     const dots = [];
@@ -1058,6 +1187,10 @@ function renderProperties() {
       unitRentRows.push(`<div class="row"><span class="l">Unit ${u} Rent</span><span style="color:var(--green);">${fmt(amt)}</span></div>`);
     }
 
+    const confBadge = (conf) => conf
+      ? `<span style="font-size:0.55rem;color:var(--green);margin-left:0.3rem;">✓ paid</span>`
+      : `<span style="font-size:0.55rem;color:var(--muted);margin-left:0.3rem;">pending</span>`;
+
     return `<div class="card full" style="margin-bottom:0.7rem;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.7rem;">
         <div>
@@ -1069,26 +1202,42 @@ function renderProperties() {
           <button class="edit-btn" onclick="openEditPropModal('${p.id}')">Edit</button>
         </div>
       </div>
+
+      <div class="clbl" style="margin-bottom:0.3rem;margin-top:0.2rem;">Income</div>
       <div class="row"><span class="l">Units</span><span>${p.units}</span></div>
       ${unitRentRows.join('')}
-      <div class="row"><span class="l">Total Rent / Mo</span><span style="color:var(--green);font-weight:600;">${fmt(totalRent)}</span></div>
-      <div class="row"><span class="l">Insurance / Mo</span><span style="color:var(--red);">${fmt(insurance)}</span></div>
-      <div class="row"><span class="l">Taxes / Mo</span><span style="color:var(--red);">${fmt(taxMonthly)}</span></div>
-      <div class="row"><span class="l">Other Expenses / Mo</span><span style="color:var(--red);">${fmt(p.expenses||0)}</span></div>
+      <div class="row"><span class="l" style="font-weight:600;">Total Rent / Mo</span><span style="color:var(--green);font-weight:600;">${fmt(totalRent)}</span></div>
+
+      <div class="clbl" style="margin-bottom:0.3rem;margin-top:0.7rem;">Fixed Expenses</div>
+      <div class="row"><span class="l">Mortgage P&I${confBadge(mortConf)}</span><span style="color:var(--red);">${fmt(mortgagePayment)}</span></div>
+      <div class="row"><span class="l">Insurance${confBadge(insConf)}</span><span style="color:var(--red);">${fmt(insurance)}</span></div>
+      <div class="row"><span class="l">Taxes / Mo${confBadge(taxConf)}</span><span style="color:var(--red);">${fmt(taxMonthly)}</span></div>
+      <div class="row"><span class="l" style="font-weight:600;">Fixed Total / Mo</span><span style="color:var(--red);font-weight:600;">${fmt(fixedTotal)}</span></div>
+
+      <div class="clbl" style="margin-bottom:0.3rem;margin-top:0.7rem;">Variable Expenses (MTD Logged)</div>
+      <div class="row"><span class="l">Utilities</span><span style="color:var(--red);">${fmt(mthUtilities)}</span></div>
+      <div class="row"><span class="l">Supplies</span><span style="color:var(--red);">${fmt(mthSupplies)}</span></div>
+      <div class="row"><span class="l">Other</span><span style="color:var(--red);">${fmt(mthOther)}</span></div>
+      <div class="row"><span class="l" style="font-weight:600;">Variable Total MTD</span><span style="color:var(--red);font-weight:600;">${fmt(variableTotal)}</span></div>
+
+      <div class="clbl" style="margin-bottom:0.3rem;margin-top:0.7rem;">Cash Flow</div>
       <div class="row"><span class="l">Net Monthly CF</span><span style="color:${nm>=0?'var(--green)':'var(--red)'};">${fmt(nm)}</span></div>
-      <div class="row"><span class="l">Net Annual CF</span><span style="color:${na>=0?'var(--green)':'var(--red)'};">${fmt(na)}</span></div>
-      <div class="row"><span class="l">Current Value</span><span>${fmt(p.value||0)}</span></div>
-      <div class="row"><span class="l">Mortgage</span><span style="color:var(--red);">${fmt(p.mortgage||0)}</span></div>
-      <div class="row"><span class="l">Equity</span><span style="color:var(--accent);">${fmt(eq)}</span></div>
-      <div class="row"><span class="l">MTD Expenses (logged)</span><span style="color:var(--red);">${fmt(mthExp)}</span></div>
+      <div class="row"><span class="l">Net Annual CF (proj)</span><span style="color:${na>=0?'var(--green)':'var(--red)'};">${fmt(na)}</span></div>
       <div class="row"><span class="l">YTD Expenses (logged)</span><span style="color:var(--red);">${fmt(ytdExp)}</span></div>
+
+      <div class="clbl" style="margin-bottom:0.3rem;margin-top:0.7rem;">Balance Sheet</div>
+      <div class="row"><span class="l">Current Value</span><span>${fmt(p.value||0)}</span></div>
+      <div class="row"><span class="l">Mortgage Balance</span><span style="color:var(--red);">${fmt(p.mortgage||0)}</span></div>
+      <div class="row"><span class="l">Equity</span><span style="color:var(--accent);">${fmt(eq)}</span></div>
+
       <div style="margin-top:0.6rem;">
-        <div class="clbl" style="margin-bottom:0.3rem;">Payment History — Last 6 Months</div>
+        <div class="clbl" style="margin-bottom:0.3rem;">Rent Payment History — Last 6 Months</div>
         <div class="dot-row">${dots.join('')}</div>
         <div style="display:flex;gap:0.8rem;margin-top:0.3rem;font-size:0.55rem;color:var(--muted);">
           <span>🟢 Paid</span><span>🟡 Partial</span><span>🔴 Late</span><span>⚪ Pending</span>
         </div>
       </div>
+
       ${p.rehab_budget>0?`<div style="margin-top:0.6rem;"><div class="clbl" style="margin-bottom:0.2rem;">Rehab Progress</div><div style="background:var(--surface2);border-radius:4px;height:5px;overflow:hidden;"><div style="height:100%;width:${Math.min(100,Math.round(((p.rehab_spent||0)/p.rehab_budget)*100))}%;background:var(--accent);border-radius:4px;"></div></div><div style="display:flex;justify-content:space-between;font-size:0.54rem;color:var(--muted);margin-top:0.2rem;"><span>${fmt(p.rehab_spent||0)} spent</span><span>${fmt(p.rehab_budget)} budget</span></div></div>`:''}
     </div>`;
   }).join('');
@@ -1098,19 +1247,21 @@ function renderProperties() {
 async function loadAll() {
   setSyncStatus('syncing', 'Syncing...');
   try {
-    const [pRes, tRes, hRes, sRes, dRes, rRes] = await Promise.all([
+    const [pRes, tRes, hRes, sRes, dRes, rRes, eRes] = await Promise.all([
       sb.from('properties').select('*').order('created_at'),
       sb.from('transactions').select('*').order('created_at', {ascending:false}),
       sb.from('hours').select('*').order('created_at', {ascending:false}),
       sb.from('settings').select('*'),
       sb.from('drives').select('*').order('created_at', {ascending:false}),
       sb.from('rent_confirmations').select('*').order('created_at', {ascending:false}),
+      sb.from('expense_confirmations').select('*').order('created_at', {ascending:false}),
     ]);
     properties = pRes.data || [];
     transactions = tRes.data || [];
     hours = hRes.data || [];
     drives = dRes.data || [];
     rentConfirmations = rRes.data || [];
+    expenseConfirmations = eRes.data || [];
     const navSetting = (sRes.data||[]).find(s => s.key==='nav');
     if (navSetting) { navValue = parseFloat(navSetting.value)||400000; document.getElementById('nav-input').value = navValue; }
     setSyncStatus('synced', 'Synced');
@@ -1240,6 +1391,7 @@ async function saveProperty() {
     purchase: parseFloat(document.getElementById('ppurchase').value)||0,
     value: parseFloat(document.getElementById('pvalue').value)||0,
     mortgage: parseFloat(document.getElementById('pmortgage').value)||0,
+    mortgage_payment: parseFloat(document.getElementById('pmortgage_payment').value)||0,
     rent: totalRent,
     expenses: parseFloat(document.getElementById('pexpenses').value)||0,
     insurance: parseFloat(document.getElementById('pinsurance').value)||110,
@@ -1268,6 +1420,7 @@ function openEditPropModal(id) {
   document.getElementById('ep-purchase').value = p.purchase||'';
   document.getElementById('ep-value').value = p.value||'';
   document.getElementById('ep-mortgage').value = p.mortgage||'';
+  document.getElementById('ep-mortgage_payment').value = p.mortgage_payment||'';
   document.getElementById('ep-expenses').value = p.expenses||'';
   document.getElementById('ep-insurance').value = p.insurance||110;
   document.getElementById('ep-tax').value = p.tax_annual||'';
@@ -1303,6 +1456,7 @@ async function saveEditProperty() {
     purchase: parseFloat(document.getElementById('ep-purchase').value)||0,
     value: parseFloat(document.getElementById('ep-value').value)||0,
     mortgage: parseFloat(document.getElementById('ep-mortgage').value)||0,
+    mortgage_payment: parseFloat(document.getElementById('ep-mortgage_payment').value)||0,
     rent: totalRent,
     expenses: parseFloat(document.getElementById('ep-expenses').value)||0,
     insurance: parseFloat(document.getElementById('ep-insurance').value)||110,
@@ -1351,7 +1505,7 @@ function toggleEditCats() {
   const t = document.getElementById('edit-type').value;
   document.getElementById('edit-cat').innerHTML = t==='income'
     ? '<option>Rent Payment</option><option>Other Income</option>'
-    : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
+    : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Supplies</option><option>Other</option>';
 }
 function previewEditReceipt(e) {
   const file = e.target.files[0]; if (!file) return;
@@ -1481,7 +1635,7 @@ function toggleScanCats() {
   const t = document.getElementById('sc-type').value;
   document.getElementById('sc-cat').innerHTML = t==='income'
     ? '<option>Rent Payment</option><option>Other Income</option>'
-    : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
+    : '<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Supplies</option><option>Other</option>';
 }
 async function handleScanFile(e) {
   const file = e.target.files[0]; if (!file) return;
@@ -1550,7 +1704,7 @@ function toggleExpCats() {
   const t=document.getElementById('et').value;
   document.getElementById('ecat').innerHTML=t==='income'
     ?'<option>Rent Payment</option><option>Other Income</option>'
-    :'<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Other</option>';
+    :'<option>Rehab</option><option>Contractor</option><option>Repairs & Maintenance</option><option>Insurance</option><option>Property Taxes</option><option>Mortgage Payment</option><option>LOC Interest</option><option>Utilities</option><option>Supplies</option><option>Other</option>';
 }
 
 // ── UNDERWRITER
