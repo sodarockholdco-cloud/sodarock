@@ -371,6 +371,13 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
       <div><label class="flbl">Date</label><input type="date" class="finput" id="edate"></div>
     </div>
     <div class="frow"><label class="flbl">Description</label><input type="text" class="finput" id="edesc" placeholder="e.g. Demo labor"></div>
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.65rem;padding:0.6rem 0.7rem;background:var(--surface2);border-radius:7px;border:1px solid var(--border);">
+      <input type="checkbox" id="enon_recurring" style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;">
+      <div>
+        <label for="enon_recurring" style="font-size:0.72rem;cursor:pointer;">One-time / Non-recurring expense</label>
+        <div style="font-size:0.58rem;color:var(--muted);margin-top:0.1rem;">Check for repairs, rehab, capital items — excluded from recurring cash flow</div>
+      </div>
+    </div>
     <div class="btn-row">
       <button class="btn btn-s" onclick="closeModal('expModal')">Cancel</button>
       <button class="btn btn-p" onclick="saveExpense()">Save</button>
@@ -546,6 +553,13 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
       <div><label class="flbl">Date</label><input type="date" class="finput" id="edit-date"></div>
     </div>
     <div class="frow"><label class="flbl">Description</label><input type="text" class="finput" id="edit-desc"></div>
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.65rem;padding:0.6rem 0.7rem;background:var(--surface2);border-radius:7px;border:1px solid var(--border);">
+      <input type="checkbox" id="edit-non_recurring" style="width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;">
+      <div>
+        <label for="edit-non_recurring" style="font-size:0.72rem;cursor:pointer;">One-time / Non-recurring expense</label>
+        <div style="font-size:0.58rem;color:var(--muted);margin-top:0.1rem;">Excluded from recurring cash flow calculation</div>
+      </div>
+    </div>
     <div class="frow">
       <label class="flbl">Attach / Replace Receipt</label>
       <input type="file" id="edit-receipt-file" accept="image/*" style="display:none;" onchange="previewEditReceipt(event)">
@@ -869,7 +883,7 @@ function renderOverview() {
   document.getElementById('ov-yr').textContent = yr;
 
   const projInc = properties.reduce((s,p) => s + (p.status==='active' ? getUnitRentsTotal(p) : 0), 0);
-  const projExp = properties.reduce((s,p) => s + (p.status==='active' ? (p.expenses||0) : 0), 0);
+  const projExp = properties.reduce((s,p) => s + (p.status==='active' ? ((p.mortgage_payment||0)+(p.insurance||110)+((p.tax_annual||0)/12)) : 0), 0);
   const acf = (projInc - projExp) * 12;
   const pct = Math.min(100, Math.round((acf/125000)*100));
 
@@ -1020,7 +1034,7 @@ function renderExpenses() {
     return `<div class="exp-item">
       ${thumb}
       <div style="flex:1;min-width:0;">
-        <div class="exp-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.description||t.category}</div>
+        <div class="exp-desc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.description||t.category}${t.non_recurring?'  <span style="font-size:0.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:0.05rem 0.3rem;color:var(--muted);vertical-align:middle;">1×</span>':''}</div>
         <div class="exp-meta">${t.property} · ${t.category} · ${t.date}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0;">
@@ -1152,8 +1166,17 @@ function renderProperties() {
     const mthOther = mthTrans.filter(t=>!['Utilities','Supplies','Mortgage Payment','Insurance','Property Taxes'].includes(t.category)).reduce((s,t)=>s+t.amount,0);
     const variableTotal = mthUtilities + mthSupplies + mthOther;
 
+    // Recurring only — exclude non_recurring items
+    const mthTransRecurring = mthTrans.filter(t=>!t.non_recurring);
+    const mthOtherRecurring = mthTransRecurring.filter(t=>!['Utilities','Supplies','Mortgage Payment','Insurance','Property Taxes'].includes(t.category)).reduce((s,t)=>s+t.amount,0);
+    const mthUtilitiesRecurring = mthTransRecurring.filter(t=>t.category==='Utilities').reduce((s,t)=>s+t.amount,0);
+    const mthSuppliesRecurring = mthTransRecurring.filter(t=>t.category==='Supplies').reduce((s,t)=>s+t.amount,0);
+    const variableTotalRecurring = mthUtilitiesRecurring + mthSuppliesRecurring + mthOtherRecurring;
+
     const nm = totalRent - fixedTotal - variableTotal;
     const na = nm * 12;
+    const nmRecurring = totalRent - fixedTotal - variableTotalRecurring;
+    const naRecurring = nmRecurring * 12;
     const eq = (p.value||0)-(p.mortgage||0);
 
     // YTD from log
@@ -1221,8 +1244,10 @@ function renderProperties() {
       <div class="row"><span class="l" style="font-weight:600;">Variable Total MTD</span><span style="color:var(--red);font-weight:600;">${fmt(variableTotal)}</span></div>
 
       <div class="clbl" style="margin-bottom:0.3rem;margin-top:0.7rem;">Cash Flow</div>
-      <div class="row"><span class="l">Net Monthly CF</span><span style="color:${nm>=0?'var(--green)':'var(--red)'};">${fmt(nm)}</span></div>
-      <div class="row"><span class="l">Net Annual CF (proj)</span><span style="color:${na>=0?'var(--green)':'var(--red)'};">${fmt(na)}</span></div>
+      <div class="row"><span class="l">Net Monthly — Actual</span><span style="color:${nm>=0?'var(--green)':'var(--red)'};">${fmt(nm)}</span></div>
+      <div class="row"><span class="l">Net Monthly — Recurring Only</span><span style="color:${nmRecurring>=0?'var(--green)':'var(--red)'};">${fmt(nmRecurring)}</span></div>
+      <div class="row"><span class="l">Net Annual — Actual</span><span style="color:${na>=0?'var(--green)':'var(--red)'};">${fmt(na)}</span></div>
+      <div class="row"><span class="l">Net Annual — Recurring Only</span><span style="color:${naRecurring>=0?'var(--green)':'var(--red)'};">${fmt(naRecurring)}</span></div>
       <div class="row"><span class="l">YTD Expenses (logged)</span><span style="color:var(--red);">${fmt(ytdExp)}</span></div>
 
       <div class="clbl" style="margin-bottom:0.3rem;margin-top:0.7rem;">Balance Sheet</div>
@@ -1283,10 +1308,13 @@ async function saveExpense() {
     category: document.getElementById('ecat').value,
     amount: amt, date: document.getElementById('edate').value,
     description: document.getElementById('edesc').value,
+    non_recurring: document.getElementById('enon_recurring').checked,
   });
   if (error) { showToast('Save failed: '+error.message, true); setSyncStatus('error','Error'); return; }
   closeModal('expModal');
-  document.getElementById('eamt').value=''; document.getElementById('edesc').value='';
+  document.getElementById('eamt').value='';
+  document.getElementById('edesc').value='';
+  document.getElementById('enon_recurring').checked=false;
   showToast('Transaction saved ✓');
   await loadAll();
 }
@@ -1499,6 +1527,7 @@ function openEditModal(id) {
   document.getElementById('edit-cat').value = t.category;
   document.getElementById('edit-receipt-name').textContent = t.receipt_url ? '✓ Receipt attached' : 'No photo';
   document.getElementById('edit-receipt-preview').style.display = 'none';
+  document.getElementById('edit-non_recurring').checked = t.non_recurring || false;
   document.getElementById('editModal').classList.add('open');
 }
 function toggleEditCats() {
@@ -1526,7 +1555,7 @@ async function saveEdit() {
     const { error: ue } = await sb.storage.from('receipts').upload(path, editReceiptFile, {contentType:editReceiptFile.type});
     if (!ue) { const {data} = sb.storage.from('receipts').getPublicUrl(path); receiptUrl = data?.publicUrl; }
   }
-  const updates = { type:document.getElementById('edit-type').value, property:document.getElementById('edit-prop').value, category:document.getElementById('edit-cat').value, amount:amt, date:document.getElementById('edit-date').value, description:document.getElementById('edit-desc').value };
+  const updates = { type:document.getElementById('edit-type').value, property:document.getElementById('edit-prop').value, category:document.getElementById('edit-cat').value, amount:amt, date:document.getElementById('edit-date').value, description:document.getElementById('edit-desc').value, non_recurring:document.getElementById('edit-non_recurring').checked };
   if (receiptUrl) updates.receipt_url = receiptUrl;
   const { error } = await sb.from('transactions').update(updates).eq('id', id);
   if (error) { showToast('Save failed', true); setSyncStatus('error','Error'); return; }
