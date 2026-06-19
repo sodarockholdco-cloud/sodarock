@@ -147,6 +147,7 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
     <button class="tab" onclick="switchTab('properties',this)">Properties</button>
     <button class="tab" onclick="switchTab('underwrite',this)">Underwrite</button>
     <button class="tab" onclick="switchTab('export',this)">Export</button>
+    <button class="tab" onclick="switchTab('liquidity',this)">Liquidity</button>
   </div>
 </div>
 
@@ -300,6 +301,38 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
     <div class="row"><span class="l">Default insurance</span><span>$110/mo</span></div>
     <div class="row"><span class="l">Target rent / unit</span><span style="color:var(--accent);">$1,050–$1,100</span></div>
   </div>
+</div>
+
+<!-- LIQUIDITY -->
+<div id="page-liquidity" class="page">
+  <!-- Global Settings -->
+  <span class="slabel" style="margin-top:0;">Capital Limits</span>
+  <div class="card full" style="margin-bottom:0.8rem;">
+    <div class="frow2">
+      <div>
+        <label class="flbl">HELOC Limit ($)</label>
+        <div style="display:flex;gap:0.4rem;align-items:center;">
+          <input type="number" class="finput" id="liq-heloc-input" placeholder="82000" oninput="liqRenderTable()">
+        </div>
+      </div>
+      <div>
+        <label class="flbl">PAL Limit ($)</label>
+        <div style="display:flex;gap:0.4rem;align-items:center;">
+          <input type="number" class="finput" id="liq-pal-input" placeholder="125000" oninput="liqRenderTable()">
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-p" style="width:100%;margin-top:0.3rem;" onclick="saveLiqSettings()">Save Limits</button>
+  </div>
+
+  <!-- Scenario table — horizontal scroll -->
+  <span class="slabel">Scenarios</span>
+  <div id="liq-table-wrap" style="overflow-x:auto;margin:0 -1rem;padding:0 1rem;">
+    <div id="liq-table-inner" style="min-width:320px;">
+      <div class="loading">⏳ Loading...</div>
+    </div>
+  </div>
+  <button id="liq-add-scenario-btn" class="btn btn-s" style="width:100%;margin-top:0.8rem;display:none;" onclick="liqAddScenario()">+ Add Scenario</button>
 </div>
 
 <!-- EXPORT -->
@@ -685,6 +718,47 @@ body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospac
 
 <!-- ATTACH RECEIPT INPUT -->
 <input type="file" id="attach-file" accept="image/*" style="display:none;" onchange="handleAttachReceipt(event)">
+
+<!-- LIQUIDITY: ADD/EDIT SCENARIO MODAL -->
+<div class="overlay" id="liqScenarioModal">
+  <div class="modal">
+    <div class="mtitle" id="liqScenarioModalTitle">Add <span>Scenario</span></div>
+    <input type="hidden" id="lsm-id">
+    <div class="frow"><label class="flbl">Scenario Title / Timeframe</label><input type="text" class="finput" id="lsm-title" placeholder="e.g. 6/1–9/30 w/ McE"></div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('liqScenarioModal')">Cancel</button>
+      <button class="btn btn-p" onclick="liqSaveScenario()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIQUIDITY: ADD ROW MODAL -->
+<div class="overlay" id="liqAddRowModal">
+  <div class="modal">
+    <div class="mtitle">Add <span>Row</span></div>
+    <input type="hidden" id="larm-section">
+    <div class="frow"><label class="flbl">Row Label</label><input type="text" class="finput" id="larm-label" placeholder="e.g. McE down payment"></div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('liqAddRowModal')">Cancel</button>
+      <button class="btn btn-p" onclick="liqSaveRow()">Add Row</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIQUIDITY: EDIT CELL MODAL -->
+<div class="overlay" id="liqCellModal">
+  <div class="modal">
+    <div class="mtitle" id="liqCellModalTitle">Edit <span>Amount</span></div>
+    <input type="hidden" id="lcm-scenario-id">
+    <input type="hidden" id="lcm-section">
+    <input type="hidden" id="lcm-row-index">
+    <div class="frow"><label class="flbl">Amount ($k — enter in thousands, e.g. 80 = $80k)</label><input type="number" class="finput" id="lcm-amount" placeholder="0" step="0.1"></div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="closeModal('liqCellModal')">Cancel</button>
+      <button class="btn btn-p" onclick="liqSaveCell()">Save</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1291,6 +1365,7 @@ async function loadAll() {
     if (navSetting) { navValue = parseFloat(navSetting.value)||400000; document.getElementById('nav-input').value = navValue; }
     setSyncStatus('synced', 'Synced');
     render();
+    await loadLiquidity();
   } catch(e) {
     setSyncStatus('error', 'Sync error');
     showToast('Could not connect', true);
@@ -1959,6 +2034,384 @@ async function confirmImport() {
   cancelImport();
   showToast(`Imported ${records.length} records ✓`);
   await loadAll();
+}
+
+// ── LIQUIDITY SCENARIOS
+let liqScenarios = [];
+let liqConfig = { uses_rows: [], sources_rows: [], available_rows: [], heloc: 0, pal: 0 };
+
+async function loadLiquidity() {
+  // Load scenarios
+  const [scRes, cfgRes] = await Promise.all([
+    sb.from('liquidity_scenarios').select('*').order('sort_order'),
+    sb.from('settings').select('*').eq('key', 'liquidity_config'),
+  ]);
+  liqScenarios = scRes.data || [];
+  const cfgRow = (cfgRes.data || [])[0];
+  if (cfgRow) {
+    try { liqConfig = JSON.parse(cfgRow.value); } catch(e) {}
+  }
+  // Populate settings inputs
+  document.getElementById('liq-heloc-input').value = liqConfig.heloc || '';
+  document.getElementById('liq-pal-input').value = liqConfig.pal || '';
+  liqRenderTable();
+}
+
+async function saveLiqSettings() {
+  liqConfig.heloc = parseFloat(document.getElementById('liq-heloc-input').value) || 0;
+  liqConfig.pal = parseFloat(document.getElementById('liq-pal-input').value) || 0;
+  await liqPersistConfig();
+  liqRenderTable();
+  showToast('Limits saved ✓');
+}
+
+async function liqPersistConfig() {
+  await sb.from('settings').upsert({ key: 'liquidity_config', value: JSON.stringify(liqConfig) }, { onConflict: 'key' });
+}
+
+async function liqPersistScenarios() {
+  if (!liqScenarios.length) return;
+  await sb.from('liquidity_scenarios').upsert(liqScenarios, { onConflict: 'id' });
+}
+
+// ── RENDER TABLE
+function liqRenderTable() {
+  const wrap = document.getElementById('liq-table-inner');
+  const addBtn = document.getElementById('liq-add-scenario-btn');
+  if (!liqConfig.uses_rows) liqConfig.uses_rows = [];
+  if (!liqConfig.sources_rows) liqConfig.sources_rows = [];
+  if (!liqConfig.available_rows) liqConfig.available_rows = [];
+
+  const heloc = liqConfig.heloc || 0;
+  const pal = liqConfig.pal || 0;
+  const capacity = heloc + pal;
+  const scenarios = liqScenarios;
+
+  // Show/hide add scenario button
+  addBtn.style.display = scenarios.length < 10 ? 'block' : 'none';
+
+  if (!scenarios.length) {
+    wrap.innerHTML = `<div class="empty">No scenarios yet.<br>Add your first scenario below.</div>`;
+    return;
+  }
+
+  // Shared column width
+  const COL = 80; // px per scenario col
+  const LABEL_COL = 130; // px for label col
+  const totalW = LABEL_COL + COL * scenarios.length + 40;
+
+  function fmtK(v) {
+    if (v === undefined || v === null || v === '') return '—';
+    const n = parseFloat(v);
+    if (isNaN(n)) return '—';
+    return n === 0 ? '—' : n.toFixed(n % 1 === 0 ? 0 : 1);
+  }
+
+  function cellColor(val, isNeg) {
+    if (val === undefined || val === null || val === '') return 'var(--muted)';
+    const n = parseFloat(val);
+    if (isNaN(n) || n === 0) return 'var(--muted)';
+    if (isNeg) return n < 0 ? 'var(--red)' : 'var(--green)';
+    return 'var(--text)';
+  }
+
+  // Compute derived values per scenario
+  function computeScenario(sc) {
+    const uses = sc.uses || {};
+    const sourcesCustom = sc.sources_custom || {};
+    const availCustom = sc.available_custom || {};
+
+    const totalNeed = liqConfig.uses_rows.reduce((s, r) => s + (parseFloat(uses[r]) || 0), 0);
+    const totalCapacity = capacity + liqConfig.sources_rows.reduce((s, r) => s + (parseFloat(sourcesCustom[r]) || 0), 0);
+    const difference = totalCapacity - totalNeed;
+    const availCustomTotal = liqConfig.available_rows.reduce((s, r) => s + (parseFloat(availCustom[r]) || 0), 0);
+    const available = difference + availCustomTotal;
+
+    return { totalNeed, totalCapacity, difference, available };
+  }
+
+  // Build HTML
+  let html = `<div style="min-width:${totalW}px;">`;
+
+  // Header row
+  html += `<div style="display:flex;align-items:stretch;border-bottom:2px solid var(--accent);padding-bottom:0.4rem;margin-bottom:0.1rem;">
+    <div style="width:${LABEL_COL}px;flex-shrink:0;font-size:0.54rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);padding:0.2rem 0;"></div>
+    ${scenarios.map(sc => `
+      <div style="width:${COL}px;flex-shrink:0;text-align:center;padding:0.15rem 0.2rem;">
+        <div style="font-size:0.6rem;color:var(--accent);font-weight:600;line-height:1.3;cursor:pointer;" onclick="liqEditScenario('${sc.id}')">${sc.title || 'Untitled'}</div>
+        <div style="font-size:0.5rem;color:var(--muted);margin-top:0.1rem;cursor:pointer;" onclick="liqDeleteScenario('${sc.id}')">✕ delete</div>
+      </div>`).join('')}
+    <div style="width:40px;flex-shrink:0;"></div>
+  </div>`;
+
+  // Section renderer helper
+  function sectionRow(label, isHeader, values, computed, rowKey, section, rowIdx, editable, negColor) {
+    const labelStyle = isHeader
+      ? `font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);font-weight:600;padding:0.5rem 0 0.2rem;`
+      : `font-size:0.68rem;color:var(--muted);padding:0.28rem 0;`;
+    const computedStyle = `font-size:0.68rem;font-family:'Syne',sans-serif;font-weight:700;`;
+
+    let cells = '';
+    if (isHeader) {
+      cells = scenarios.map(() => `<div style="width:${COL}px;flex-shrink:0;"></div>`).join('');
+    } else if (computed) {
+      cells = scenarios.map(sc => {
+        const cv = computeScenario(sc);
+        const val = cv[rowKey];
+        const color = val < 0 ? 'var(--red)' : val > 0 ? 'var(--green)' : 'var(--muted)';
+        return `<div style="width:${COL}px;flex-shrink:0;text-align:right;padding:0.28rem 0.4rem;${computedStyle}color:${color};">${val === 0 ? '—' : val.toFixed(val % 1 === 0 ? 0 : 1)}</div>`;
+      }).join('');
+    } else if (editable === 'fixed') {
+      // HELOC or PAL rows — show global value, not per-scenario
+      const val = rowKey === 'heloc' ? heloc : pal;
+      cells = scenarios.map(() =>
+        `<div style="width:${COL}px;flex-shrink:0;text-align:right;padding:0.28rem 0.4rem;font-size:0.68rem;color:var(--muted);">${fmtK(val)}</div>`
+      ).join('');
+    } else {
+      // Per-scenario editable cell
+      cells = scenarios.map(sc => {
+        const store = section === 'uses' ? (sc.uses || {}) : section === 'sources' ? (sc.sources_custom || {}) : (sc.available_custom || {});
+        const val = store[rowKey];
+        const display = fmtK(val);
+        const color = negColor ? cellColor(val, true) : (parseFloat(val) > 0 ? 'var(--text)' : 'var(--muted)');
+        return `<div style="width:${COL}px;flex-shrink:0;text-align:right;padding:0.28rem 0.4rem;font-size:0.68rem;color:${color};cursor:pointer;border-bottom:1px dashed var(--border);" onclick="liqOpenCell('${sc.id}','${section}','${rowKey}','${label}')">${display}</div>`;
+      }).join('');
+    }
+
+    const deleteBtn = (section && rowIdx !== undefined && !computed && editable !== 'fixed')
+      ? `<div style="width:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+           <button onclick="liqDeleteRow('${section}','${rowKey}')" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;padding:0.2rem;">✕</button>
+         </div>`
+      : `<div style="width:40px;flex-shrink:0;"></div>`;
+
+    return `<div style="display:flex;align-items:center;border-bottom:1px solid var(--border);">
+      <div style="width:${LABEL_COL}px;flex-shrink:0;${labelStyle}">${label}</div>
+      ${cells}
+      ${deleteBtn}
+    </div>`;
+  }
+
+  // USES section
+  html += sectionRow('USES', true, null, false, null, null, null, null, false);
+  liqConfig.uses_rows.forEach((r, i) => {
+    html += sectionRow(r, false, null, false, r, 'uses', i, 'custom', false);
+  });
+  html += `<div style="display:flex;padding:0.3rem 0;">
+    <div style="width:${LABEL_COL}px;flex-shrink:0;">
+      <button onclick="liqOpenAddRow('uses')" style="font-size:0.58rem;color:var(--accent);background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;padding:0;">+ add row</button>
+    </div>
+    <div style="flex:1;"></div>
+  </div>`;
+
+  // Total Need (computed)
+  html += `<div style="display:flex;align-items:center;border-bottom:2px solid var(--border);background:var(--surface2);">
+    <div style="width:${LABEL_COL}px;flex-shrink:0;font-size:0.62rem;font-weight:600;color:var(--text);padding:0.35rem 0;text-transform:uppercase;letter-spacing:0.08em;">Total Need</div>
+    ${scenarios.map(sc => {
+      const cv = computeScenario(sc);
+      return `<div style="width:${COL}px;flex-shrink:0;text-align:right;padding:0.35rem 0.4rem;font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;color:var(--red);">${cv.totalNeed > 0 ? cv.totalNeed.toFixed(cv.totalNeed % 1 === 0 ? 0 : 1) : '—'}</div>`;
+    }).join('')}
+    <div style="width:40px;flex-shrink:0;"></div>
+  </div>`;
+
+  // SOURCES section
+  html += sectionRow('SOURCES', true, null, false, null, null, null, null, false);
+  html += sectionRow('HELOC', false, null, false, 'heloc', 'sources', null, 'fixed', false);
+  html += sectionRow('PAL', false, null, false, 'pal', 'sources', null, 'fixed', false);
+  liqConfig.sources_rows.forEach((r, i) => {
+    html += sectionRow(r, false, null, false, r, 'sources', i, 'custom', false);
+  });
+  html += `<div style="display:flex;padding:0.3rem 0;">
+    <div style="width:${LABEL_COL}px;flex-shrink:0;">
+      <button onclick="liqOpenAddRow('sources')" style="font-size:0.58rem;color:var(--accent);background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;padding:0;">+ add row</button>
+    </div>
+    <div style="flex:1;"></div>
+  </div>`;
+
+  // Capacity (computed)
+  html += `<div style="display:flex;align-items:center;border-bottom:2px solid var(--border);background:var(--surface2);">
+    <div style="width:${LABEL_COL}px;flex-shrink:0;font-size:0.62rem;font-weight:600;color:var(--text);padding:0.35rem 0;text-transform:uppercase;letter-spacing:0.08em;">Capacity</div>
+    ${scenarios.map(sc => {
+      const cv = computeScenario(sc);
+      return `<div style="width:${COL}px;flex-shrink:0;text-align:right;padding:0.35rem 0.4rem;font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;color:var(--green);">${cv.totalCapacity > 0 ? cv.totalCapacity.toFixed(cv.totalCapacity % 1 === 0 ? 0 : 1) : '—'}</div>`;
+    }).join('')}
+    <div style="width:40px;flex-shrink:0;"></div>
+  </div>`;
+
+  // Difference (computed)
+  html += `<div style="display:flex;align-items:center;border-bottom:1px solid var(--border);">
+    <div style="width:${LABEL_COL}px;flex-shrink:0;font-size:0.68rem;color:var(--muted);padding:0.28rem 0;">Difference</div>
+    ${scenarios.map(sc => {
+      const cv = computeScenario(sc);
+      const color = cv.difference < 0 ? 'var(--red)' : 'var(--green)';
+      return `<div style="width:${COL}px;flex-shrink:0;text-align:right;padding:0.28rem 0.4rem;font-size:0.68rem;font-weight:600;color:${color};">${cv.difference.toFixed(cv.difference % 1 === 0 ? 0 : 1)}</div>`;
+    }).join('')}
+    <div style="width:40px;flex-shrink:0;"></div>
+  </div>`;
+
+  // AVAILABLE section
+  html += sectionRow('AVAILABLE', true, null, false, null, null, null, null, false);
+  liqConfig.available_rows.forEach((r, i) => {
+    html += sectionRow(r, false, null, false, r, 'available', i, 'custom', false);
+  });
+  html += `<div style="display:flex;padding:0.3rem 0;">
+    <div style="width:${LABEL_COL}px;flex-shrink:0;">
+      <button onclick="liqOpenAddRow('available')" style="font-size:0.58rem;color:var(--accent);background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;padding:0;">+ add row</button>
+    </div>
+    <div style="flex:1;"></div>
+  </div>`;
+
+  // Available total (computed)
+  html += `<div style="display:flex;align-items:center;border-top:2px solid var(--accent);">
+    <div style="width:${LABEL_COL}px;flex-shrink:0;font-size:0.62rem;font-weight:600;color:var(--accent);padding:0.4rem 0;text-transform:uppercase;letter-spacing:0.08em;">Available</div>
+    ${scenarios.map(sc => {
+      const cv = computeScenario(sc);
+      const color = cv.available < 0 ? 'var(--red)' : 'var(--green)';
+      return `<div style="width:${COL}px;flex-shrink:0;text-align:right;padding:0.4rem 0.4rem;font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;color:${color};">${cv.available.toFixed(cv.available % 1 === 0 ? 0 : 1)}</div>`;
+    }).join('')}
+    <div style="width:40px;flex-shrink:0;"></div>
+  </div>`;
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+// ── SCENARIO CRUD
+function liqAddScenario() {
+  document.getElementById('lsm-id').value = '';
+  document.getElementById('lsm-title').value = '';
+  document.getElementById('liqScenarioModalTitle').innerHTML = 'Add <span>Scenario</span>';
+  openModal('liqScenarioModal');
+}
+
+function liqEditScenario(id) {
+  const sc = liqScenarios.find(s => s.id === id);
+  if (!sc) return;
+  document.getElementById('lsm-id').value = id;
+  document.getElementById('lsm-title').value = sc.title || '';
+  document.getElementById('liqScenarioModalTitle').innerHTML = 'Edit <span>Scenario</span>';
+  openModal('liqScenarioModal');
+}
+
+async function liqSaveScenario() {
+  const title = document.getElementById('lsm-title').value.trim();
+  if (!title) { showToast('Enter a title', true); return; }
+  const id = document.getElementById('lsm-id').value;
+  setSyncStatus('syncing', 'Saving...');
+
+  if (id) {
+    // Update existing
+    const sc = liqScenarios.find(s => s.id === id);
+    if (sc) sc.title = title;
+    await sb.from('liquidity_scenarios').update({ title }).eq('id', id);
+  } else {
+    // Insert new
+    const sort = liqScenarios.length;
+    const { data, error } = await sb.from('liquidity_scenarios').insert({
+      title, sort_order: sort,
+      uses: {}, sources_custom: {}, available_custom: {}
+    }).select().single();
+    if (!error && data) liqScenarios.push(data);
+  }
+
+  closeModal('liqScenarioModal');
+  setSyncStatus('synced', 'Synced');
+  showToast('Scenario saved ✓');
+  liqRenderTable();
+}
+
+async function liqDeleteScenario(id) {
+  if (!confirm('Delete this scenario? Cannot be undone.')) return;
+  setSyncStatus('syncing', 'Saving...');
+  await sb.from('liquidity_scenarios').delete().eq('id', id);
+  liqScenarios = liqScenarios.filter(s => s.id !== id);
+  setSyncStatus('synced', 'Synced');
+  showToast('Scenario deleted');
+  liqRenderTable();
+}
+
+// ── ROW CRUD
+function liqOpenAddRow(section) {
+  document.getElementById('larm-section').value = section;
+  document.getElementById('larm-label').value = '';
+  openModal('liqAddRowModal');
+}
+
+async function liqSaveRow() {
+  const section = document.getElementById('larm-section').value;
+  const label = document.getElementById('larm-label').value.trim();
+  if (!label) { showToast('Enter a label', true); return; }
+
+  const key = section + '_rows';
+  if (!liqConfig[key]) liqConfig[key] = [];
+  if (liqConfig[key].includes(label)) { showToast('Row already exists', true); return; }
+  liqConfig[key].push(label);
+
+  setSyncStatus('syncing', 'Saving...');
+  await liqPersistConfig();
+  closeModal('liqAddRowModal');
+  setSyncStatus('synced', 'Synced');
+  showToast('Row added ✓');
+  liqRenderTable();
+}
+
+async function liqDeleteRow(section, label) {
+  if (!confirm(`Delete row "${label}"? This removes it from all scenarios.`)) return;
+  const key = section + '_rows';
+  liqConfig[key] = (liqConfig[key] || []).filter(r => r !== label);
+  // Remove the value from all scenarios
+  liqScenarios.forEach(sc => {
+    const store = section === 'uses' ? sc.uses : section === 'sources' ? sc.sources_custom : sc.available_custom;
+    if (store) delete store[label];
+  });
+  setSyncStatus('syncing', 'Saving...');
+  await Promise.all([
+    liqPersistConfig(),
+    liqPersistScenarios(),
+  ]);
+  setSyncStatus('synced', 'Synced');
+  showToast('Row deleted');
+  liqRenderTable();
+}
+
+// ── CELL EDIT
+function liqOpenCell(scenarioId, section, rowKey, label) {
+  const sc = liqScenarios.find(s => s.id === scenarioId);
+  if (!sc) return;
+  const store = section === 'uses' ? (sc.uses || {}) : section === 'sources' ? (sc.sources_custom || {}) : (sc.available_custom || {});
+  document.getElementById('lcm-scenario-id').value = scenarioId;
+  document.getElementById('lcm-section').value = section;
+  document.getElementById('lcm-row-index').value = rowKey;
+  document.getElementById('lcm-amount').value = store[rowKey] || '';
+  document.getElementById('liqCellModalTitle').innerHTML = `Edit <span>${label}</span>`;
+  openModal('liqCellModal');
+}
+
+async function liqSaveCell() {
+  const scenarioId = document.getElementById('lcm-scenario-id').value;
+  const section = document.getElementById('lcm-section').value;
+  const rowKey = document.getElementById('lcm-row-index').value;
+  const amount = parseFloat(document.getElementById('lcm-amount').value) || 0;
+
+  const sc = liqScenarios.find(s => s.id === scenarioId);
+  if (!sc) return;
+
+  if (section === 'uses') {
+    if (!sc.uses) sc.uses = {};
+    sc.uses[rowKey] = amount;
+    await sb.from('liquidity_scenarios').update({ uses: sc.uses }).eq('id', scenarioId);
+  } else if (section === 'sources') {
+    if (!sc.sources_custom) sc.sources_custom = {};
+    sc.sources_custom[rowKey] = amount;
+    await sb.from('liquidity_scenarios').update({ sources_custom: sc.sources_custom }).eq('id', scenarioId);
+  } else {
+    if (!sc.available_custom) sc.available_custom = {};
+    sc.available_custom[rowKey] = amount;
+    await sb.from('liquidity_scenarios').update({ available_custom: sc.available_custom }).eq('id', scenarioId);
+  }
+
+  closeModal('liqCellModal');
+  showToast('Updated ✓');
+  liqRenderTable();
 }
 
 // ── INIT
